@@ -64,3 +64,9 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | # | Decision | Why |
 | --- | --- | --- |
 | D43 | **The product is now named My Office Bot.** *Supersedes the name in D19.* Placeholder domains are `myofficebot.app`. The GitHub repo was renamed to `thunder-chciken/my-office-bot` (the old URL redirects). Trademark and domain clearance for the new name are still required. | Matt's decision. |
+
+## Free beta (2026-10-23)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D44 | **The beta runs on free tiers**: Vercel Hobby, Supabase Free, Resend Free, the Twilio trial (up to 5 verified phones), Cloudflare Email Routing. **Switch to Vercel Pro ($20/mo) before the first outside contractor uses it**, because Hobby is non-commercial only. Upgrade Twilio when the beta outgrows 5 phones or needs texts without the trial line (sole-proprietor 10DLC is an option before the LLC exists). Add a nightly free database export, since Supabase Free has no backups. Escalation scheduling uses pg_cron, not Vercel Cron (Hobby cron runs only once a day). | Matt's choice: spend $0 while testing, pay only when real users join. |
