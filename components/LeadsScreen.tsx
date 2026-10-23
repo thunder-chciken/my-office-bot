@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, MessageSquare, Phone, Zap } from "lucide-react";
+import { MessageSquare, Phone, Zap } from "lucide-react";
 import { business, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
 import { reach, smsHref, telHref, type TestTarget } from "@/lib/contact";
-import { Avatar, Header, Segmented } from "./ui";
+import { Avatar, Header, Mascot, Segmented } from "./ui";
 
 export function LeadsScreen({
   leads,
@@ -45,7 +45,7 @@ export function LeadsScreen({
         </div>
       ) : (
         <div className="hero hero-calm">
-          <CheckCircle2 size={40} strokeWidth={2.2} />
+          <Mascot size={72} />
           <div>
             <p className="hero-calm-title">You&apos;re all caught up</p>
             <p className="hero-sub">We&apos;ll text you the second a new one comes in.</p>

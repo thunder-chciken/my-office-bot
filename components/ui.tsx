@@ -5,6 +5,30 @@ import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { X } from "lucide-react";
 import { initials } from "@/lib/data";
 
+export function Mascot({ size, className = "" }: { size: number; className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={size > 160 ? "/brand/mascot.png" : "/brand/mascot-160.png"}
+      alt=""
+      width={size}
+      height={size}
+      className={`mascot ${className}`}
+    />
+  );
+}
+
+export function BrandBar() {
+  return (
+    <div className="brand-bar">
+      <Mascot size={40} />
+      <span className="wordmark" aria-label="My Office Bot">
+        My <span className="wordmark-blue">Office</span> Bot
+      </span>
+    </div>
+  );
+}
+
 export function Header({
   title,
   subtitle,
@@ -15,6 +39,8 @@ export function Header({
   action?: ReactNode;
 }) {
   return (
+    <>
+    <BrandBar />
     <header className="screen-header">
       <div>
         <h1 className="large-title">{title}</h1>
@@ -22,6 +48,7 @@ export function Header({
       </div>
       {action}
     </header>
+    </>
   );
 }
 

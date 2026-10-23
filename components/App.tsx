@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { BellRing, Building2, CheckCircle2, Globe, Inbox, Zap } from "lucide-react";
+import { BellRing, Building2, CheckCircle2, Globe, Inbox } from "lucide-react";
 import {
   firstName,
   seedContacts,
@@ -19,6 +19,7 @@ import { LeadSheet, type ContactMethod } from "./LeadSheet";
 import { AlertsScreen } from "./AlertsScreen";
 import { WebsiteScreen } from "./WebsiteScreen";
 import { BusinessScreen } from "./BusinessScreen";
+import { Mascot } from "./ui";
 
 type Tab = "leads" | "alerts" | "website" | "business";
 
@@ -124,10 +125,10 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       <div className="stage">
         <aside className="stage-intro">
-          <span className="app-mark">
-            <Zap size={28} strokeWidth={2.6} />
-          </span>
-          <h1>My Office Bot</h1>
+          <Mascot size={120} className="stage-mascot" />
+          <h1>
+            My <span className="wordmark-blue">Office</span> Bot
+          </h1>
           <p>
             Every website lead, straight to your phone — by text, email, or a phone call. Reply with one tap
             and get back to work.
@@ -219,7 +220,7 @@ export default function App() {
                 }}
               >
                 <span className="banner-icon">
-                  <Zap size={22} strokeWidth={2.6} />
+                  <Mascot size={36} />
                 </span>
                 <span className="banner-body">
                   <span className="banner-meta">

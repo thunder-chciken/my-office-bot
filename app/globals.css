@@ -237,15 +237,35 @@ a:focus-visible {
   }
 }
 
-.app-mark {
-  display: inline-grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--sky), var(--blue));
-  box-shadow: var(--shadow-blue);
+.stage-mascot {
+  display: block;
+  filter: drop-shadow(0 16px 28px rgba(10, 108, 255, 0.22));
+}
+
+/* ---------- Brand ---------- */
+
+.mascot {
+  display: block;
+  flex: none;
+  object-fit: contain;
+}
+
+.brand-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 4px 10px;
+}
+
+.wordmark {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.wordmark-blue {
+  color: var(--blue);
 }
 
 /* ---------- Screen ---------- */
@@ -1299,8 +1319,7 @@ a:focus-visible {
   height: 44px;
   flex: none;
   border-radius: 12px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--sky), var(--blue));
+  background: linear-gradient(180deg, #fff, var(--blue-100));
 }
 
 .banner-body {
