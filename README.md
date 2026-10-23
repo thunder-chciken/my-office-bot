@@ -4,6 +4,8 @@ Instant lead alerts for home service pros — roofers, HVAC, remodelers, tile, p
 
 This repo is the **clickable prototype**: an Apple-style mobile web app with mock data, plus a working webhook endpoint that accepts form posts.
 
+**Live:** https://myofficebot.app (Vercel, domain on Cloudflare). Every push to `main` redeploys it.
+
 ## Screens
 
 - **Leads** — new leads up top with big Call / Text buttons. Tap a lead for details, one-tap quick texts, status, and alert history.
