@@ -31,8 +31,9 @@ POST /api/v1/intake  → normalize → dedupe → spam score → save lead + "re
         ▼
 notification_attempts rows (step 0 now, reminder 2 min, call 5 min, backup 7 min)
         │
+step 0 is dispatched immediately by the intake handler;
 pg_cron every minute (Vercel Cron as backup) → /api/cron/dispatch
-        │  claims due rows, re-checks the lead, sends
+        │  claims due rows (reminders, calls, retries), re-checks the lead, sends
         ├─► Twilio SMS   → contacts with Text on   ("Reply 1 to take it")
         ├─► Resend email → contacts with Email on  (+ homeowner confirmation)
         ├─► Twilio Voice → at 5 min if nobody acknowledged ("Press 1")
@@ -52,6 +53,8 @@ Business texts in the US must come from a number registered under **A2P 10DLC**.
 - Every person who receives alerts opts in (signup checkbox; backup contacts reply YES). STOP is honored automatically.
 
 ## Rough monthly cost to start
+
+Full, current model: [COSTS.md](COSTS.md). It supersedes this section.
 
 Ballpark list prices; check each provider's pricing page before budgeting.
 

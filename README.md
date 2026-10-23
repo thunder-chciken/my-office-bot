@@ -34,4 +34,5 @@ Import this GitHub repo in Vercel. No settings or environment variables needed f
 
 - [docs/SPEC.md](docs/SPEC.md): the v1 build spec (data model, escalation ladder, dispatcher, capture, security, compliance, milestones and acceptance tests).
 - [docs/DECISIONS.md](docs/DECISIONS.md): settled product and architecture decisions.
-- [docs/STACK.md](docs/STACK.md): stack, how a lead flows, costs.
+- [docs/STACK.md](docs/STACK.md): stack and how a lead flows.
+- [docs/COSTS.md](docs/COSTS.md): hosting choice, every service's cost, one-time costs, per-lead scenarios, growth stages and upgrade triggers.

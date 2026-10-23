@@ -41,6 +41,7 @@ Widget/hosted form┘        │                                   │
 
 - **One codebase**: Next.js app (UI + API) on **Vercel Pro**. Pro is required for per-minute cron.
 - **Postgres is the scheduler.** No workflow engine in v1. Every pending alert is a row with `due_at`; a minute ticker claims and dispatches due rows. An outage means the next tick catches up.
+- **First alerts go out right at intake (D37).** Once the lead commits, the intake handler immediately claims and dispatches its step-0 attempts using the same claim/eligibility/fencing path as the cron. If that fails, the rows stay `pending` and the next tick picks them up. The cron's job is reminders, escalation calls, retries and recovery. Without this, a once-a-minute poll can't meet the p95 < 30 s first-alert target.
 - **One dispatch path only [S1].** pg_cron is the primary trigger and Vercel Cron the backup. Both run the same dispatcher with the same eligibility and ledger rules. Resilience beyond that comes from monitoring and alarms (§15), not a second send path.
 
 ## 4. Data model

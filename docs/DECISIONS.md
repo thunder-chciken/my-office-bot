@@ -42,3 +42,19 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | D29 | **Provider callbacks are matched by provider SID** and only move forward by rank; terminal attempts never reopen. | Replayed or late callbacks can't corrupt state. |
 | D30 | **Billing never silently disables alerts**: past_due keeps the full ladder; suspended = email-only with notices; canceled after notices. | Losing alerts silently would break the core promise. |
 | D31 | **Metric definition fixed** (SPEC §16): eligible population, clock start (received / released / end of quiet hours), duplicates excluded, policy printed on the report. | Keeps the north-star metric honest and comparable. |
+
+## R&D 007–008 (hosting, costs, growth, 2026-10-23)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D32 | **Host on Vercel Pro.** Netlify Pro is an acceptable alternative with no reason to migrate. Vercel Hobby and Netlify Free are not allowed (non-commercial terms; free sites pause when credits run out). | The app is already Next.js on Vercel; a paused or non-compliant host would lose leads. |
+| D33 | **Budget the pilot at $100–150/month** fixed, plus ~$2.2–4.4k one-time setup (see COSTS.md). | Room for small overages and incidental tools. |
+| D34 | **Cost model has three scenarios**: lean $0.07, expected $0.12, stress $0.28 per lead. Replace them with measured numbers after 10 contractors. | One optimistic number isn't a budget. |
+| D35 | **Revenue is shown as ceilings**, with the $29 agency wholesale case alongside $49 retail. | Avoids overstating MRR. |
+| D36 | **Upgrades follow measured triggers** (COSTS.md §8), not customer counts. | Capacity depends on lead volume and behavior, not account numbers. |
+| D37 | **First alerts (step 0) are dispatched right at intake**, after the lead commits. The minute cron handles reminders, escalation calls, retries and recovery. *Refines SPEC §3/§9.* | A once-a-minute poll alone can't meet the p95 < 30 s first-alert target. |
+| D38 | **SMS capacity is per campaign**: adding phone numbers doesn't add throughput. Capacity responses are re-vetting, approved throughput increases, or a separately provisioned sender. | Prevents a wrong scaling reflex. |
+| D39 | **Second SMS provider: formal review at 300 locations**; build failover when a reliability or capacity trigger fires. It must have its own registered sender, tested routing and shared opt-outs. Design a provider-neutral interface in v1. | Locations are a poor proxy for message volume; a fake "backup" sharing the same dependencies adds nothing. |
+| D40 | **Push notifications are additive only** until a trial shows push + SMS doesn't slow acknowledgment. Trial starts when > 50% of active contacts use the installed app. | The metric is human acknowledgment, not push delivery. |
+| D41 | **Widget retries reuse one submission id; the form shows "Not sent" until the server confirms.** Browser storage is a convenience, not durability. A fallback intake endpoint on Supabase Edge Functions comes at Stage B, with the same auth, spam and idempotency rules. | Honest status for homeowners; no easier path for forged leads. |
+| D42 | **Get insurance and CPA advice before the first paying customer**: cyber/E&O quote; Texas SaaS sales tax (80% taxable) and agency resale treatment. | Lost-business claims and tax exposure start with the first invoice. |
