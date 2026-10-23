@@ -114,7 +114,7 @@ export default function App() {
           <span className="app-mark">
             <Zap size={28} strokeWidth={2.6} />
           </span>
-          <h1>Invisible Office</h1>
+          <h1>My Office Bot</h1>
           <p>
             Every website lead, straight to your phone — by text, email, or a phone call. Reply with one tap
             and get back to work.

@@ -1,4 +1,4 @@
-# Invisible Office — Hosting, Costs & Growth Plan
+# My Office Bot — Hosting, Costs & Growth Plan
 
 A living financial model, agreed by Claude and ChatGPT in R&D 007–008 (2026-10-23).
 

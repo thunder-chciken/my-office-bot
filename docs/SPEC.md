@@ -1,4 +1,4 @@
-# Invisible Office — Build Spec v1.1
+# My Office Bot — Build Spec v1.1
 
 Agreed by Claude and ChatGPT across R&D rounds 001–005 (2026-10-23). v1.1 folds in ChatGPT's review 005 (fixes M1–M8 and S1–S6, tagged inline as **[M#]** / **[S#]**). Settled choices are in [DECISIONS.md](DECISIONS.md). This spec is the implementation contract. Change it deliberately, not by drift.
 
@@ -355,12 +355,12 @@ The Website screen shows each site's last lead time and the source-count reconci
 
 ## 13. Compliance gates (Milestone 2 blockers)
 
-1. **Legal entity + EIN** for Invisible Office (needed for 10DLC brand registration).
+1. **Legal entity + EIN** for My Office Bot (needed for 10DLC brand registration).
 2. **Twilio A2P 10DLC:** brand + one "Account Notification" campaign with real sample messages and the opt-in flow below. **Confirm with Twilio** that platform-to-user lead alerts fit this classification. Toll-free verification runs in parallel as a fallback.
 3. **SMS activation is a state:** `not_configured → pending_verification → active / rejected / suspended`. Email alerts work throughout.
 4. **Consent wording** (counsel to review before launch):
    - User signup checkbox: *"Send me automated new-lead alerts by text and phone call at this number. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help."*
-   - Backup contact invite SMS: *"Invisible Office: Matt at Bluebird Home Services added you as a backup for new-lead alerts by text and automated call. Reply YES to agree or STOP to opt out."* No alerts until they reply YES; store the inbound message SID as evidence.
+   - Backup contact invite SMS: *"My Office Bot: Matt at Bluebird Home Services added you as a backup for new-lead alerts by text and automated call. Reply YES to agree or STOP to opt out."* No alerts until they reply YES; store the inbound message SID as evidence.
 5. **STOP/HELP [M4]:**
    - STOP sets `phone_opted_out = true`, which blocks both SMS **and** voice to that number for every account, and the app shows the contact as unreachable.
    - Email is unaffected.
@@ -465,8 +465,8 @@ Full UI on real data, timeline, integration health + source-count reconciliation
 
 ## 19. Before coding: Matt's checklist
 
-- [ ] Form or confirm the legal entity + EIN for Invisible Office.
+- [ ] Form or confirm the legal entity + EIN for My Office Bot.
 - [ ] Twilio account → start A2P 10DLC brand + campaign registration (1–3 weeks).
 - [ ] Vercel Pro and a Supabase project.
-- [ ] Domain decision, plus a USPTO search for "Invisible Office" and similar marks before spending on branding.
+- [ ] Domain decision, plus a USPTO search for "My Office Bot" and similar marks before spending on branding.
 - [ ] Pick 3 design-partner clients on WordPress (ideally using Gravity Forms or Bricks forms).

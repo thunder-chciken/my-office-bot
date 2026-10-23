@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Invisible Office",
+  title: "My Office Bot",
   description: "Instant lead alerts for home service pros — text, email and call the moment a website form comes in.",
-  appleWebApp: { capable: true, title: "Invisible Office", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "My Office Bot", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

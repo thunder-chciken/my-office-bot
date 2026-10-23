@@ -1,4 +1,4 @@
-# Invisible Office — Stack & Hosting Plan
+# My Office Bot — Stack & Hosting Plan
 
 Goal: a website lead reaches the right people's phones in seconds, by text, email or a phone call, and **never gets lost**. Reliability matters more than anything else, so the whole system is built around a database ledger of every alert, with delivery receipts.
 
@@ -48,7 +48,7 @@ Every step is an event on the lead, which is the **Alert history** in the app an
 
 Business texts in the US must come from a number registered under **A2P 10DLC**. Without it, carriers filter or block texts, which is the #1 reason lead-alert apps "randomly" stop working.
 
-- Invisible Office registers **one brand** (needs a legal entity + EIN) and an "Account Notification" campaign for alerts to contractors and their staff. Plan 1–3 weeks; email alerts cover the gap.
+- My Office Bot registers **one brand** (needs a legal entity + EIN) and an "Account Notification" campaign for alerts to contractors and their staff. Plan 1–3 weeks; email alerts cover the gap.
 - **Texts to homeowners are not in v1.** Sending on each contractor's behalf would require registering every contractor as its own brand. Homeowners get email confirmations instead.
 - Every person who receives alerts opts in (signup checkbox; backup contacts reply YES). STOP is honored automatically.
 

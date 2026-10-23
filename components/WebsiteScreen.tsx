@@ -9,19 +9,19 @@ const connectOptions = [
     Icon: Code2,
     title: "Add one line to your site",
     body: "Works with any form. Paste it before </body>.",
-    value: `<script src="https://invisibleoffice.app/f.js" data-account="${business.accountId}" async></script>`,
+    value: `<script src="https://myofficebot.app/f.js" data-account="${business.accountId}" async></script>`,
   },
   {
     Icon: Inbox,
     title: "Or forward your form emails",
     body: "Already get form emails? Forward them here.",
-    value: `leads-${business.accountId}@in.invisibleoffice.app`,
+    value: `leads-${business.accountId}@in.myofficebot.app`,
   },
   {
     Icon: Webhook,
     title: "Or use a webhook",
     body: "For WordPress, Bricks, Gravity Forms, Zapier.",
-    value: `https://invisibleoffice.app/api/leads/${business.accountId}`,
+    value: `https://myofficebot.app/api/leads/${business.accountId}`,
   },
 ];
 

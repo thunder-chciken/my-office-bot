@@ -58,3 +58,9 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | D40 | **Push notifications are additive only** until a trial shows push + SMS doesn't slow acknowledgment. Trial starts when > 50% of active contacts use the installed app. | The metric is human acknowledgment, not push delivery. |
 | D41 | **Widget retries reuse one submission id; the form shows "Not sent" until the server confirms.** Browser storage is a convenience, not durability. A fallback intake endpoint on Supabase Edge Functions comes at Stage B, with the same auth, spam and idempotency rules. | Honest status for homeowners; no easier path for forged leads. |
 | D42 | **Get insurance and CPA advice before the first paying customer**: cyber/E&O quote; Texas SaaS sales tax (80% taxable) and agency resale treatment. | Lost-business claims and tax exposure start with the first invoice. |
+
+## Rename (2026-10-23)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D43 | **The product is now named My Office Bot.** *Supersedes the name in D19.* Placeholder domains are `myofficebot.app`. The GitHub repo is still `thunder-chciken/Invisible-office` until Matt renames it on GitHub. Trademark and domain clearance for the new name are still required. | Matt's decision. |

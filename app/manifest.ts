@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Invisible Office",
-    short_name: "Invisible Office",
+    name: "My Office Bot",
+    short_name: "My Office Bot",
     description: "Instant lead alerts for home service pros.",
     start_url: "/",
     display: "standalone",
