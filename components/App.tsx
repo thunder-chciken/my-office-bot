@@ -44,6 +44,10 @@ export default function App() {
 
   useEffect(() => setTest(loadTestTarget()), []);
 
+  useEffect(() => {
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }, []);
+
   const updateTest = (t: TestTarget) => {
     setTest(t);
     saveTestTarget(t);
