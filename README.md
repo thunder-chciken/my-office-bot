@@ -32,4 +32,6 @@ Import this GitHub repo in Vercel. No settings or environment variables needed f
 
 ## Plan
 
-See [docs/STACK.md](docs/STACK.md) for the production stack (Vercel, Supabase, Twilio, Resend, Inngest), how a lead flows through it, costs, and build order.
+- [docs/SPEC.md](docs/SPEC.md): the v1 build spec (data model, escalation ladder, dispatcher, capture, security, compliance, milestones and acceptance tests).
+- [docs/DECISIONS.md](docs/DECISIONS.md): settled product and architecture decisions.
+- [docs/STACK.md](docs/STACK.md): stack, how a lead flows, costs.
