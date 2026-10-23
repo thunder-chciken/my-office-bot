@@ -1,25 +1,32 @@
 "use client";
 
-import { Check, Clock, Mail, MapPin, MessageSquare, Navigation, Phone, Send } from "lucide-react";
+import { Check, Clock, FlaskConical, Mail, MapPin, MessageSquare, Navigation, Phone, Send } from "lucide-react";
 import { firstName, quickReplies, statusLabel, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
+import { mailHref, mapsHref, reach, smsHref, telHref, useIsApple, type TestTarget } from "@/lib/contact";
 import { Avatar, Segmented, Sheet } from "./ui";
 
 export type ContactMethod = "call" | "text" | "email" | "directions";
 
 export function LeadSheet({
   lead,
+  test,
   onClose,
   onContact,
   onStatus,
 }: {
   lead: Lead | null;
+  test: TestTarget;
   onClose: () => void;
   onContact: (lead: Lead, how: ContactMethod, text?: string) => void;
   onStatus: (lead: Lead, status: LeadStatus) => void;
 }) {
+  const apple = useIsApple();
+  const to = lead ? reach(lead, test) : null;
+  const testing = !!(test.phone.trim() || test.email.trim());
+
   return (
     <Sheet open={!!lead} onClose={onClose} title="Lead">
-      {lead && (
+      {lead && to && (
         <>
           <div className="detail-head">
             <Avatar name={lead.name} size={68} />
@@ -32,19 +39,31 @@ export function LeadSheet({
             </div>
           </div>
 
+          {testing && (
+            <p className="test-note">
+              <FlaskConical size={20} strokeWidth={2.4} /> Test mode: calls, texts and emails go to you
+            </p>
+          )}
+
           <div className="action-grid">
-            <button className="action-tile is-primary" onClick={() => onContact(lead, "call")}>
+            <a className="action-tile is-primary" href={telHref(to.phone)} onClick={() => onContact(lead, "call")}>
               <Phone size={28} strokeWidth={2.4} /> Call
-            </button>
-            <button className="action-tile" onClick={() => onContact(lead, "text")}>
+            </a>
+            <a className="action-tile" href={smsHref(to.phone)} onClick={() => onContact(lead, "text")}>
               <MessageSquare size={28} strokeWidth={2.4} /> Text
-            </button>
-            <button className="action-tile" onClick={() => onContact(lead, "email")}>
+            </a>
+            <a className="action-tile" href={mailHref(to.email, lead)} onClick={() => onContact(lead, "email")}>
               <Mail size={28} strokeWidth={2.4} /> Email
-            </button>
-            <button className="action-tile" onClick={() => onContact(lead, "directions")}>
+            </a>
+            <a
+              className="action-tile"
+              href={mapsHref(lead.address, apple)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onContact(lead, "directions")}
+            >
               <Navigation size={28} strokeWidth={2.4} /> Directions
-            </button>
+            </a>
           </div>
 
           <div className="bubble">
@@ -53,24 +72,36 @@ export function LeadSheet({
           </div>
 
           <ul className="card list">
-            <li className="row">
-              <Phone size={22} className="row-icon" /> {lead.phone}
+            <li>
+              <a className="row row-link" href={telHref(to.phone)} onClick={() => onContact(lead, "call")}>
+                <Phone size={22} className="row-icon" /> {lead.phone}
+              </a>
             </li>
-            <li className="row">
-              <Mail size={22} className="row-icon" /> <span className="truncate">{lead.email}</span>
+            <li>
+              <a className="row row-link" href={mailHref(to.email, lead)} onClick={() => onContact(lead, "email")}>
+                <Mail size={22} className="row-icon" /> <span className="truncate">{lead.email}</span>
+              </a>
             </li>
-            <li className="row">
-              <MapPin size={22} className="row-icon" /> {lead.address}
+            <li>
+              <a
+                className="row row-link"
+                href={mapsHref(lead.address, apple)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => onContact(lead, "directions")}
+              >
+                <MapPin size={22} className="row-icon" /> {lead.address}
+              </a>
             </li>
           </ul>
 
           <h4 className="sub-title">Quick text to {firstName(lead.name)}</h4>
           <div className="stack-sm">
             {quickReplies.map((r) => (
-              <button key={r} className="reply" onClick={() => onContact(lead, "text", r)}>
+              <a key={r} className="reply" href={smsHref(to.phone, r)} onClick={() => onContact(lead, "text", r)}>
                 <span>{r}</span>
                 <Send size={22} strokeWidth={2.4} />
-              </button>
+              </a>
             ))}
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { BellRing, Building2, CheckCircle2, Globe, Inbox, Zap } from "lucide-react";
 import {
@@ -13,6 +13,7 @@ import {
   type Lead,
   type LeadStatus,
 } from "@/lib/data";
+import { loadTestTarget, saveTestTarget, type TestTarget } from "@/lib/contact";
 import { LeadsScreen } from "./LeadsScreen";
 import { LeadSheet, type ContactMethod } from "./LeadSheet";
 import { AlertsScreen } from "./AlertsScreen";
@@ -39,6 +40,14 @@ export default function App() {
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const bannerTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const testIndex = useRef(0);
+  const [test, setTest] = useState<TestTarget>({ phone: "", email: "" });
+
+  useEffect(() => setTest(loadTestTarget()), []);
+
+  const updateTest = (t: TestTarget) => {
+    setTest(t);
+    saveTestTarget(t);
+  };
 
   const showToast = useCallback((msg: string) => {
     clearTimeout(toastTimer.current);
@@ -53,9 +62,9 @@ export default function App() {
     const name = firstName(lead.name);
     const messages: Record<ContactMethod, string> = {
       call: `Calling ${name}…`,
-      text: text ? `Text sent to ${name}` : `Opening text to ${name}…`,
-      email: `Opening email to ${name}…`,
-      directions: `Opening directions…`,
+      text: text ? `Opening Messages with your reply…` : `Opening Messages…`,
+      email: `Opening Mail…`,
+      directions: `Opening Maps…`,
     };
     showToast(messages[how]);
     if (how === "directions") return;
@@ -140,7 +149,9 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
             >
-              {tab === "leads" && <LeadsScreen leads={leads} onOpen={setOpenId} onContact={contactLead} />}
+              {tab === "leads" && (
+                <LeadsScreen leads={leads} test={test} onOpen={setOpenId} onContact={contactLead} />
+              )}
               {tab === "alerts" && (
                 <AlertsScreen
                   contacts={contacts}
@@ -153,6 +164,8 @@ export default function App() {
               {tab === "website" && <WebsiteScreen onCopy={copy} onTestLead={sendTestLead} />}
               {tab === "business" && (
                 <BusinessScreen
+                  test={test}
+                  onTestChange={updateTest}
                   stats={{
                     leads: leads.length + 8,
                     reply: "6 min",
@@ -218,7 +231,13 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          <LeadSheet lead={openLead} onClose={() => setOpenId(null)} onContact={contactLead} onStatus={setStatus} />
+          <LeadSheet
+            lead={openLead}
+            test={test}
+            onClose={() => setOpenId(null)}
+            onContact={contactLead}
+            onStatus={setStatus}
+          />
 
           <div className="toast-wrap" aria-live="polite">
             <AnimatePresence>

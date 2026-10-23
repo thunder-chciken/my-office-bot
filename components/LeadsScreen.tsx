@@ -4,14 +4,17 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, MessageSquare, Phone, Zap } from "lucide-react";
 import { business, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
+import { reach, smsHref, telHref, type TestTarget } from "@/lib/contact";
 import { Avatar, Header, Segmented } from "./ui";
 
 export function LeadsScreen({
   leads,
+  test,
   onOpen,
   onContact,
 }: {
   leads: Lead[];
+  test: TestTarget;
   onOpen: (id: string) => void;
   onContact: (lead: Lead, how: "call" | "text") => void;
 }) {
@@ -86,12 +89,20 @@ export function LeadsScreen({
                 <p className="lead-msg">{lead.message}</p>
               </button>
               <div className="btn-row">
-                <button className="btn btn-primary" onClick={() => onContact(lead, "call")}>
+                <a
+                  className="btn btn-primary"
+                  href={telHref(reach(lead, test).phone)}
+                  onClick={() => onContact(lead, "call")}
+                >
                   <Phone size={22} strokeWidth={2.5} /> Call
-                </button>
-                <button className="btn btn-soft" onClick={() => onContact(lead, "text")}>
+                </a>
+                <a
+                  className="btn btn-soft"
+                  href={smsHref(reach(lead, test).phone)}
+                  onClick={() => onContact(lead, "text")}
+                >
                   <MessageSquare size={22} strokeWidth={2.5} /> Text
-                </button>
+                </a>
               </div>
             </motion.article>
           ))}
