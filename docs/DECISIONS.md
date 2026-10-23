@@ -63,4 +63,4 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 
 | # | Decision | Why |
 | --- | --- | --- |
-| D43 | **The product is now named My Office Bot.** *Supersedes the name in D19.* Placeholder domains are `myofficebot.app`. The GitHub repo is still `thunder-chciken/Invisible-office` until Matt renames it on GitHub. Trademark and domain clearance for the new name are still required. | Matt's decision. |
+| D43 | **The product is now named My Office Bot.** *Supersedes the name in D19.* Placeholder domains are `myofficebot.app`. The GitHub repo was renamed to `thunder-chciken/my-office-bot` (the old URL redirects). Trademark and domain clearance for the new name are still required. | Matt's decision. |

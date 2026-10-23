@@ -10,7 +10,7 @@ Full implementation contract: [SPEC.md](SPEC.md). Settled choices: [DECISIONS.md
 | --- | --- | --- |
 | App (UI + API) | **Next.js** (this repo) | One codebase for the phone app and the intake/webhook API. |
 | Hosting | **Vercel Pro** | Push to GitHub = deploy, with a preview URL per branch. Pro is required for per-minute cron. |
-| Code | **GitHub** — `thunder-chciken/Invisible-office` | Vercel deploys `main` automatically. |
+| Code | **GitHub** — `thunder-chciken/my-office-bot` | Vercel deploys `main` automatically. |
 | Database, login, scheduler | **Supabase** (Postgres + Auth + RLS + pg_cron) | Leads, contacts, the alert ledger and the escalation scheduler all live in Postgres. Login by text code or email link. Row-level security keeps each business's data separate. |
 | Texts + phone calls | **Twilio** (Messaging + Voice) | Delivery receipts, press-1 acknowledgment on calls, STOP/HELP handling. |
 | Email | **Resend** | Alerts, homeowner confirmations, weekly reports; inbound parsing for forwarded form emails (or Postmark). |
