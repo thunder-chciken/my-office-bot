@@ -109,6 +109,7 @@ export function LeadsDesk({
   onSchedule,
   onAddNote,
   onDeleteNote,
+  onEditReplies,
 }: {
   leads: Lead[];
   selectedId: string | null;
@@ -119,6 +120,7 @@ export function LeadsDesk({
   onSchedule: (lead: Lead) => void;
   onAddNote: (lead: Lead, text: string) => Promise<boolean>;
   onDeleteNote: (lead: Lead, note: LeadNote) => void;
+  onEditReplies: () => void;
 }) {
   const account = useAccount();
   const [filter, setFilter] = useState<Filter>("all");
@@ -200,6 +202,7 @@ export function LeadsDesk({
               onSchedule={onSchedule}
               onAddNote={onAddNote}
               onDeleteNote={onDeleteNote}
+              onEditReplies={onEditReplies}
             />
           </div>
         ) : (

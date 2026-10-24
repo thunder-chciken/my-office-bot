@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { AlertCircle, BellRing, Building2, CalendarDays, CheckCircle2, Contact2, Globe, Inbox, Users } from "lucide-react";
+import {
+  AlertCircle,
+  BellRing,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  Contact2,
+  Globe,
+  Inbox,
+  MessageSquareText,
+  Users,
+} from "lucide-react";
 import {
   firstName,
   seedContacts,
@@ -57,14 +68,16 @@ import { EditorSheet, EventSheet, NotifySheet, type EditTarget } from "./Schedul
 import { DeskPage, DesktopShell, LeadsDesk } from "./Desktop";
 import { CustomerEditSheet, CustomerSheet, CustomersScreen } from "./CustomersScreen";
 import { Mascot } from "./ui";
+import { RepliesScreen } from "./QuickReplies";
 
-type Tab = "leads" | "schedule" | "customers" | "alerts" | "website" | "business";
+type Tab = "leads" | "schedule" | "customers" | "replies" | "alerts" | "website" | "business";
 
 // Wider labels for the desktop sidebar.
 const deskTabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
   { id: "leads", label: "Leads", Icon: Inbox },
   { id: "schedule", label: "Schedule", Icon: CalendarDays },
   { id: "customers", label: "Customers", Icon: Contact2 },
+  { id: "replies", label: "Quick replies", Icon: MessageSquareText },
   { id: "alerts", label: "Team & alerts", Icon: Users },
   { id: "website", label: "Website & forms", Icon: Globe },
   { id: "business", label: "Business profile", Icon: Building2 },
@@ -372,6 +385,11 @@ export default function App({
     }));
   };
 
+  const editReplies = () => {
+    setOpenId(null);
+    setTab("replies");
+  };
+
   // ---- lead notes (D58)
 
   const addNote = async (lead: Lead, text: string) => {
@@ -544,13 +562,15 @@ export default function App({
         );
       case "website":
         return <WebsiteScreen onCopy={copy} onTestLead={sendTestLead} />;
+      case "replies":
+        return <RepliesScreen onSave={saveReplies} />;
       case "business":
         return (
           <BusinessScreen
             test={test}
             onTestChange={updateTest}
             onSaveProfile={saveProfile}
-            onSaveReplies={saveReplies}
+            onOpenReplies={() => setTab("replies")}
             onOpenWebsite={() => setTab("website")}
             stats={
               live
@@ -583,6 +603,7 @@ export default function App({
           onSchedule={scheduleLead}
           onAddNote={addNote}
           onDeleteNote={deleteNote}
+          onEditReplies={editReplies}
         />
       )}
 
@@ -689,6 +710,7 @@ export default function App({
                   onSchedule={scheduleLead}
                   onAddNote={addNote}
                   onDeleteNote={deleteNote}
+                  onEditReplies={editReplies}
                 />
               ) : (
                 <DeskPage key={tab}>{screenFor(tab)}</DeskPage>
@@ -760,7 +782,7 @@ export default function App({
             {tabs.map(({ id, label, Icon }) => (
               <button
                 key={id}
-                className={`tab${tab === id || (id === "business" && tab === "website") ? " is-active" : ""}`}
+                className={`tab${tab === id || (id === "business" && (tab === "website" || tab === "replies")) ? " is-active" : ""}`}
                 aria-current={tab === id ? "page" : undefined}
                 onClick={() => setTab(id)}
               >

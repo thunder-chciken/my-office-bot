@@ -17,6 +17,7 @@ type DetailProps = {
   onSchedule: (lead: Lead) => void;
   onAddNote: (lead: Lead, text: string) => Promise<boolean>;
   onDeleteNote: (lead: Lead, note: LeadNote) => void;
+  onEditReplies: () => void;
 };
 
 export function LeadSheet({ lead, onClose, ...props }: DetailProps & { lead: Lead | null; onClose: () => void }) {
@@ -29,7 +30,16 @@ export function LeadSheet({ lead, onClose, ...props }: DetailProps & { lead: Lea
 
 // The full lead: contact buttons, message, quick replies, status and alert history.
 // Shown in a sheet on phones and as the right-hand panel on the desktop dashboard.
-export function LeadDetail({ lead, test, onContact, onStatus, onSchedule, onAddNote, onDeleteNote }: DetailProps & { lead: Lead }) {
+export function LeadDetail({
+  lead,
+  test,
+  onContact,
+  onStatus,
+  onSchedule,
+  onAddNote,
+  onDeleteNote,
+  onEditReplies,
+}: DetailProps & { lead: Lead }) {
   const apple = useIsApple();
   const account = useAccount();
   const to = reach(lead, test);
@@ -112,7 +122,12 @@ export function LeadDetail({ lead, test, onContact, onStatus, onSchedule, onAddN
             </li>
           </ul>
 
-          <h4 className="sub-title">Quick text to {firstName(lead.name)}</h4>
+          <div className="sub-title-row">
+            <h4 className="sub-title">Quick text to {firstName(lead.name)}</h4>
+            <button className="text-btn" onClick={onEditReplies}>
+              Edit replies
+            </button>
+          </div>
           {replies.length ? (
             <div className="stack-sm">
               {replies.map((r, i) => (
@@ -123,7 +138,7 @@ export function LeadDetail({ lead, test, onContact, onStatus, onSchedule, onAddN
               ))}
             </div>
           ) : (
-            <p className="muted">Write your own quick replies under Business.</p>
+            <p className="muted">No quick replies yet. Tap Edit replies to write some.</p>
           )}
 
           <LeadNotes key={lead.id} lead={lead} onAdd={onAddNote} onDelete={onDeleteNote} />

@@ -26,7 +26,6 @@ import type { TestTarget } from "@/lib/contact";
 import { timezones } from "@/lib/live";
 import { browserClient } from "@/lib/supabase/client";
 import { Header, SectionTitle, Sheet } from "./ui";
-import { QuickRepliesForm } from "./QuickReplies";
 
 const tradeList = [
   { name: "Roofing", Icon: Home },
@@ -42,20 +41,19 @@ export function BusinessScreen({
   test,
   onTestChange,
   onSaveProfile,
-  onSaveReplies,
+  onOpenReplies,
   onOpenWebsite,
 }: {
   stats: { leads: number; reply: string; booked: number };
   test: TestTarget;
   onTestChange: (t: TestTarget) => void;
   onSaveProfile: (next: Account) => Promise<boolean>;
-  onSaveReplies: (replies: string[] | null) => Promise<boolean>;
+  onOpenReplies: () => void;
   onOpenWebsite: () => void;
 }) {
   const account = useAccount();
   const desktop = useLayout() === "desktop";
   const [editing, setEditing] = useState(false);
-  const [replying, setReplying] = useState(false);
   const replyCount = repliesFor(account).length;
 
   const signOut = async () => {
@@ -104,6 +102,21 @@ export function BusinessScreen({
         </ul>
       )}
 
+      <ul className="card list website-link">
+        <li>
+          <button className="row row-btn" onClick={onOpenReplies}>
+            <MessageSquareText size={22} className="row-icon" />
+            <span className="row-text">
+              <span>Quick replies</span>
+              <span className="muted">
+                {account.quickReplies === null ? "Write up to 10 of your own texts" : `${replyCount} of 10 written by you`}
+              </span>
+            </span>
+            <ChevronRight size={22} className="chev" />
+          </button>
+        </li>
+      </ul>
+
       <SectionTitle>This week</SectionTitle>
       <div className="stat-grid">
         <div className="stat">
@@ -137,22 +150,6 @@ export function BusinessScreen({
           );
         })}
       </div>
-
-      <SectionTitle>Quick text replies</SectionTitle>
-      <ul className="card list">
-        <li>
-          <button className="row row-btn" onClick={() => setReplying(true)}>
-            <MessageSquareText size={22} className="row-icon" />
-            <span className="row-text">
-              <span>Your quick replies</span>
-              <span className="muted">
-                {account.quickReplies === null ? "Using the built-in replies · tap to write your own" : `${replyCount} of 10 written by you`}
-              </span>
-            </span>
-            <ChevronRight size={22} className="chev" />
-          </button>
-        </li>
-      </ul>
 
       <SectionTitle>Test on your phone</SectionTitle>
       <div className="card pad form">
@@ -247,18 +244,6 @@ export function BusinessScreen({
             onSave={async (next) => {
               const ok = await onSaveProfile(next);
               if (ok) setEditing(false);
-              return ok;
-            }}
-          />
-        )}
-      </Sheet>
-
-      <Sheet open={replying} onClose={() => setReplying(false)} title="Quick text replies">
-        {replying && (
-          <QuickRepliesForm
-            onSave={async (replies) => {
-              const ok = await onSaveReplies(replies);
-              if (ok && replies !== null) setReplying(false);
               return ok;
             }}
           />

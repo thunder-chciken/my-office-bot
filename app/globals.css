@@ -3185,6 +3185,27 @@ a.row-btn {
   line-height: 1.4;
 }
 
+.sub-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 28px 2px 12px;
+}
+
+.sub-title-row .sub-title {
+  margin: 0;
+}
+
+.sub-title-row .text-btn {
+  min-height: 40px;
+  font-size: 16px;
+}
+
+.replies-form {
+  margin-top: 14px;
+}
+
 .reply-edit-list {
   display: grid;
   gap: 14px;

@@ -4,9 +4,26 @@ import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { MAX_REPLIES, MAX_REPLY_LENGTH, fillReply } from "@/lib/data";
 import { repliesFor, useAccount } from "@/lib/account";
+import { Header } from "./ui";
 
 // Your own quick text replies (D58): up to 10, in your words. {name} becomes the customer's first name.
 // Tapping one on a lead opens the phone's Messages with the text ready, same as the built-in ones.
+
+// Its own page: in the dashboard sidebar, and under Business on phones.
+export function RepliesScreen({ onSave }: { onSave: (replies: string[] | null) => Promise<boolean> }) {
+  const account = useAccount();
+  return (
+    <>
+      <Header title="Quick replies" subtitle="Texts you send to a customer with one tap" />
+      <div className="card pad">
+        <p className="card-lead">
+          {account.quickReplies === null ? "Start from these, or write your own" : `Your replies · ${account.quickReplies.length} of 10`}
+        </p>
+        <QuickRepliesForm onSave={onSave} />
+      </div>
+    </>
+  );
+}
 
 export function QuickRepliesForm({ onSave }: { onSave: (replies: string[] | null) => Promise<boolean> }) {
   const account = useAccount();
@@ -33,7 +50,7 @@ export function QuickRepliesForm({ onSave }: { onSave: (replies: string[] | null
     setBusy(true);
     const ok = await onSave(replies);
     setBusy(false);
-    if (ok && replies === null) setDraft(repliesFor({ ...account, quickReplies: null }));
+    if (ok) setDraft(replies ?? repliesFor({ ...account, quickReplies: null }));
   };
 
   return (
@@ -80,7 +97,7 @@ export function QuickRepliesForm({ onSave }: { onSave: (replies: string[] | null
 
       {draft.length < MAX_REPLIES ? (
         <button className="btn btn-soft btn-block" onClick={add}>
-          <Plus size={22} strokeWidth={2.5} /> Add a reply
+          <Plus size={22} strokeWidth={2.5} /> Add a reply ({draft.length} of {MAX_REPLIES})
         </button>
       ) : (
         <p className="muted center-note">That&apos;s 10, the most you can have. Delete one to add another.</p>
