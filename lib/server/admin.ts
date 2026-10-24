@@ -38,6 +38,8 @@ export type AdminBusiness = {
   leadsTotal: number;
   leads7d: number;
   lastLeadAt: string | null;
+  /** Businesses that signed up through this one's "Powered by My Office Bot" link (D59). */
+  referrals: number;
 };
 
 export type AdminPerson = {
@@ -67,9 +69,9 @@ export async function loadAdminData(): Promise<AdminData> {
   const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
 
   const [accounts, memberships, sites, contacts, leads, problems, auditRows, users] = await Promise.all([
-    db.from("accounts").select("id, name, created_at, billing_status, sms_status, city").order("created_at", { ascending: false }),
+    db.from("accounts").select("id, name, created_at, billing_status, sms_status, city, referred_by_site").order("created_at", { ascending: false }),
     db.from("memberships").select("account_id, user_id, role"),
-    db.from("sites").select("account_id, domain"),
+    db.from("sites").select("account_id, domain, public_key"),
     db.from("contacts").select("account_id").is("removed_at", null),
     db.from("leads").select("account_id, received_at").order("received_at", { ascending: false }).limit(20000),
     db
@@ -92,6 +94,7 @@ export async function loadAdminData(): Promise<AdminData> {
 
   const businesses: AdminBusiness[] = (accounts.data ?? []).map((a) => {
     const mine = leadRows.filter((l) => l.account_id === a.id);
+    const keys = (sites.data ?? []).filter((s) => s.account_id === a.id).map((s) => s.public_key as string);
     return {
       id: a.id,
       name: a.name,
@@ -105,6 +108,7 @@ export async function loadAdminData(): Promise<AdminData> {
       leadsTotal: mine.length,
       leads7d: mine.filter((l) => l.received_at >= weekAgo).length,
       lastLeadAt: mine[0]?.received_at ?? null,
+      referrals: (accounts.data ?? []).filter((x) => x.referred_by_site && keys.includes(x.referred_by_site)).length,
     };
   });
 

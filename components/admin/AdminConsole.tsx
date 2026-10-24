@@ -125,6 +125,7 @@ export function AdminConsole({ data, meId, meEmail }: { data: AdminData; meId: s
                   <th>Signed up</th>
                   <th className="num">Leads</th>
                   <th className="num">7 days</th>
+                  <th className="num" title="Businesses that signed up from this one's chat bubble link">Referred</th>
                   <th>Last lead</th>
                   <th>Status</th>
                   <th>Texts</th>
@@ -142,6 +143,7 @@ export function AdminConsole({ data, meId, meEmail }: { data: AdminData; meId: s
                     <td>{day(b.createdAt)}</td>
                     <td className="num">{b.leadsTotal}</td>
                     <td className="num">{b.leads7d}</td>
+                    <td className="num">{b.referrals || "—"}</td>
                     <td>{when(b.lastLeadAt)}</td>
                     <td>
                       <span className={`pill ${b.status === "suspended" ? "pill-urgent" : "status-booked"}`}>
@@ -186,7 +188,7 @@ export function AdminConsole({ data, meId, meEmail }: { data: AdminData; meId: s
                 ))}
                 {businesses.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="empty">No businesses match.</td>
+                    <td colSpan={10} className="empty">No businesses match.</td>
                   </tr>
                 )}
               </tbody>

@@ -18,6 +18,8 @@ class MOB_Admin {
 		add_action( 'admin_post_mob_test', array( __CLASS__, 'test' ) );
 		add_action( 'admin_post_mob_flush', array( __CLASS__, 'flush' ) );
 		add_action( 'admin_post_mob_save_forms', array( __CLASS__, 'save_forms' ) );
+		add_action( 'admin_post_mob_save_bubble', array( __CLASS__, 'save_bubble' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( MOB_FILE ), array( __CLASS__, 'links' ) );
 	}
 
@@ -28,6 +30,18 @@ class MOB_Admin {
 
 	public static function menu() {
 		add_options_page( 'My Office Bot', 'My Office Bot', 'manage_options', self::SLUG, array( __CLASS__, 'render' ) );
+	}
+
+	/** Color picker, media library and the bubble's own styles, on this settings page only. */
+	public static function assets( $hook ) {
+		if ( 'settings_page_' . self::SLUG !== $hook ) {
+			return;
+		}
+		$url = plugins_url( 'assets/', MOB_FILE );
+		wp_enqueue_style( 'wp-color-picker' );
+		wp_enqueue_media();
+		wp_enqueue_style( 'mob-bubble', $url . 'bubble.css', array(), MOB_VERSION );
+		wp_enqueue_script( 'mob-admin-bubble', $url . 'admin-bubble.js', array( 'jquery', 'wp-color-picker' ), MOB_VERSION, true );
 	}
 
 	private static function url( array $args = array() ) {
@@ -124,6 +138,17 @@ class MOB_Admin {
 		}
 		update_option( MOB_Capture::FORMS, $forms, false );
 		self::done( __( 'Saved.', 'my-office-bot' ) );
+	}
+
+	public static function save_bubble() {
+		self::guard( 'mob_save_bubble' );
+		$in = isset( $_POST['bubble'] ) ? (array) wp_unslash( $_POST['bubble'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by MOB_Bubble::sanitize().
+		$s  = MOB_Bubble::sanitize( $in );
+		update_option( MOB_Bubble::OPTION, $s, false );
+		if ( $s['enabled'] && ! MOB_Client::credentials() ) {
+			self::done( __( 'Saved. The chat bubble will appear on your site once you connect above.', 'my-office-bot' ) );
+		}
+		self::done( $s['enabled'] ? __( 'Saved. The chat bubble is on your site now.', 'my-office-bot' ) : __( 'Saved. The chat bubble is off.', 'my-office-bot' ) );
 	}
 
 	// ------------------------------------------------------------------ page
@@ -224,7 +249,7 @@ class MOB_Admin {
 						<?php foreach ( $forms as $id => $form ) : ?>
 							<tr>
 								<td><input type="checkbox" name="enabled[<?php echo esc_attr( $id ); ?>]" value="1" <?php checked( ! empty( $form['enabled'] ) ); ?> /></td>
-								<td><strong><?php echo esc_html( $form['name'] ? $form['name'] : $form['form_id'] ); ?></strong><br /><span class="description"><?php echo esc_html( MOB_Integrations::BUILDERS[ $form['builder'] ] ?? $form['builder'] ); ?></span></td>
+								<td><strong><?php echo esc_html( $form['name'] ? $form['name'] : $form['form_id'] ); ?></strong><br /><span class="description"><?php echo esc_html( 'bubble' === $form['builder'] ? __( 'My Office Bot', 'my-office-bot' ) : ( MOB_Integrations::BUILDERS[ $form['builder'] ] ?? $form['builder'] ) ); ?></span></td>
 								<td>
 									<?php foreach ( (array) ( $form['fields'] ?? array() ) as $f ) : ?>
 										<?php
@@ -254,7 +279,9 @@ class MOB_Admin {
 				<?php submit_button( __( 'Save form settings', 'my-office-bot' ) ); ?>
 			</form>
 
-			<h2><?php esc_html_e( '3. Delivery', 'my-office-bot' ); ?></h2>
+			<?php self::render_bubble(); ?>
+
+			<h2><?php esc_html_e( '4. Delivery', 'my-office-bot' ); ?></h2>
 			<p>
 				<?php
 				echo esc_html(
@@ -283,6 +310,96 @@ class MOB_Admin {
 			<h2><?php esc_html_e( 'Privacy', 'my-office-bot' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Only the name, phone, email, address, service and message fields are sent, never passwords, payment details or uploaded files. Suggested wording for your privacy policy has been added under Settings > Privacy > Policy guide.', 'my-office-bot' ); ?></p>
 		</div>
+		<?php
+	}
+
+	/** Section 3: the chat bubble's settings, with a live preview beside them. */
+	private static function render_bubble() {
+		$s    = MOB_Bubble::settings();
+		$logo = $s['logo_id'] ? wp_get_attachment_image_url( $s['logo_id'], 'thumbnail' ) : '';
+		$icons = array(
+			'chat'   => __( 'Chat', 'my-office-bot' ),
+			'phone'  => __( 'Phone', 'my-office-bot' ),
+			'home'   => __( 'House', 'my-office-bot' ),
+			'wrench' => __( 'Wrench', 'my-office-bot' ),
+			'logo'   => __( 'Your logo', 'my-office-bot' ),
+		);
+		$texts = array(
+			'label'   => array( __( 'Bubble text', 'my-office-bot' ), 40 ),
+			'heading' => array( __( 'Card heading', 'my-office-bot' ), 60 ),
+			'button'  => array( __( 'Button text', 'my-office-bot' ), 24 ),
+			'thanks'  => array( __( 'Thank-you message', 'my-office-bot' ), 160 ),
+		);
+		?>
+		<h2><?php esc_html_e( '3. Chat bubble', 'my-office-bot' ); ?></h2>
+		<p><?php esc_html_e( 'A "Get a quote" button in the corner of every page. Visitors leave their name, phone number and what they need, and it reaches you like any other lead.', 'my-office-bot' ); ?></p>
+		<style>
+			.mob-bubble-wrap { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+			.mob-bubble-wrap .form-table { max-width: 640px; }
+			.mob-preview { position: relative; flex: 0 0 420px; max-width: 100%; height: 640px; border: 1px solid #dcdcde; border-radius: 8px; overflow: hidden; background: repeating-linear-gradient(180deg, #f6f7f7 0 28px, #fff 28px 56px); }
+			.mob-preview-label { position: absolute; top: 10px; left: 12px; margin: 0; color: #646970; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+			.mob-logo-pick img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 10px; border: 1px solid #dcdcde; }
+			.mob-logo-warn { color: #b32d2e; }
+		</style>
+		<div class="mob-bubble-wrap">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="mob-bubble-form">
+				<?php wp_nonce_field( 'mob_save_bubble' ); ?>
+				<input type="hidden" name="action" value="mob_save_bubble" />
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Show the chat bubble', 'my-office-bot' ); ?></th>
+						<td><label><input type="checkbox" name="bubble[enabled]" value="1" <?php checked( $s['enabled'] ); ?> /> <?php esc_html_e( 'On every page of this site', 'my-office-bot' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="mob-color"><?php esc_html_e( 'Your brand color', 'my-office-bot' ); ?></label></th>
+						<td><input type="text" id="mob-color" name="bubble[color]" value="<?php echo esc_attr( $s['color'] ); ?>" data-default-color="#0a6cff" />
+							<p class="description"><?php esc_html_e( 'Text on the bubble turns white or dark automatically, whichever is easier to read.', 'my-office-bot' ); ?></p></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Icon', 'my-office-bot' ); ?></th>
+						<td>
+							<?php foreach ( $icons as $value => $label ) : ?>
+								<label style="margin-right:14px"><input type="radio" name="bubble[icon]" value="<?php echo esc_attr( $value ); ?>" <?php checked( $s['icon'], $value ); ?> /> <?php echo esc_html( $label ); ?></label>
+							<?php endforeach; ?>
+							<div class="mob-logo-pick" style="margin-top:10px">
+								<input type="hidden" name="bubble[logo_id]" id="mob-logo-id" value="<?php echo esc_attr( $s['logo_id'] ); ?>" />
+								<img id="mob-logo-img" src="<?php echo esc_url( $logo ); ?>" alt="" <?php echo $logo ? '' : 'hidden'; ?> />
+								<button type="button" class="button" id="mob-logo-choose"><?php echo $logo ? esc_html__( 'Change logo', 'my-office-bot' ) : esc_html__( 'Choose logo', 'my-office-bot' ); ?></button>
+								<button type="button" class="button-link" id="mob-logo-remove" <?php echo $logo ? '' : 'hidden'; ?>><?php esc_html_e( 'Remove', 'my-office-bot' ); ?></button>
+								<p class="description"><?php esc_html_e( 'A square image, at least 120 x 120 pixels. It shows as a circle.', 'my-office-bot' ); ?></p>
+								<p class="description mob-logo-warn" id="mob-logo-warn" hidden></p>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Corner', 'my-office-bot' ); ?></th>
+						<td>
+							<label style="margin-right:14px"><input type="radio" name="bubble[side]" value="right" <?php checked( $s['side'], 'right' ); ?> /> <?php esc_html_e( 'Bottom right', 'my-office-bot' ); ?></label>
+							<label><input type="radio" name="bubble[side]" value="left" <?php checked( $s['side'], 'left' ); ?> /> <?php esc_html_e( 'Bottom left', 'my-office-bot' ); ?></label>
+						</td>
+					</tr>
+					<?php foreach ( $texts as $key => list( $label, $max ) ) : ?>
+						<tr>
+							<th scope="row"><label for="mob-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label></th>
+							<td><input type="text" class="regular-text" id="mob-<?php echo esc_attr( $key ); ?>" name="bubble[<?php echo esc_attr( $key ); ?>]" data-text="<?php echo esc_attr( $key ); ?>" maxlength="<?php echo esc_attr( $max ); ?>" value="<?php echo esc_attr( $s[ $key ] ); ?>" /></td>
+						</tr>
+					<?php endforeach; ?>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Powered by My Office Bot', 'my-office-bot' ); ?></th>
+						<td><label><input type="checkbox" name="bubble[powered]" value="1" <?php checked( $s['powered'] ); ?> /> <?php esc_html_e( 'Show a small "Powered by My Office Bot" link under the form', 'my-office-bot' ); ?></label>
+							<p class="description"><?php esc_html_e( 'It tells other contractors where the bubble comes from, with your site as the referrer.', 'my-office-bot' ); ?></p></td>
+					</tr>
+				</table>
+				<?php submit_button( __( 'Save chat bubble', 'my-office-bot' ) ); ?>
+			</form>
+			<div class="mob-preview" aria-label="<?php esc_attr_e( 'Preview', 'my-office-bot' ); ?>">
+				<p class="mob-preview-label"><?php esc_html_e( 'Preview', 'my-office-bot' ); ?></p>
+				<?php echo MOB_Bubble::markup( $s, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in markup(). ?>
+			</div>
+		</div>
+		<?php foreach ( array( 'chat', 'phone', 'home', 'wrench' ) as $icon ) : ?>
+			<template id="mob-icon-<?php echo esc_attr( $icon ); ?>"><?php echo MOB_Bubble::icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></template>
+		<?php endforeach; ?>
 		<?php
 	}
 }

@@ -1,0 +1,328 @@
+/* My Office Bot chat bubble (D59). Everything is scoped to .mob-b and resets what themes commonly style. */
+
+.mob-b {
+	--mob-c: #0a6cff;
+	--mob-on: #ffffff;
+	position: fixed;
+	bottom: max(20px, env(safe-area-inset-bottom));
+	z-index: 2147483000;
+	font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	color: #0b1a2e;
+	-webkit-font-smoothing: antialiased;
+}
+
+.mob-b--right {
+	right: 20px;
+}
+
+.mob-b--left {
+	left: 20px;
+}
+
+.mob-b *,
+.mob-b *::before,
+.mob-b *::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	font-family: inherit;
+	font-style: normal;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
+	text-shadow: none;
+	text-align: left;
+	float: none;
+}
+
+.mob-b [hidden] {
+	display: none !important;
+}
+
+.mob-b button {
+	font: inherit;
+	line-height: 1.2;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.mob-b button:focus-visible,
+.mob-b a:focus-visible {
+	outline: 3px solid #4da8ff;
+	outline-offset: 3px;
+}
+
+/* ---- the bubble */
+
+.mob-b__btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	height: 56px;
+	padding: 0 20px 0 8px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--mob-c);
+	color: var(--mob-on);
+	font-size: 16px;
+	font-weight: 700;
+	box-shadow: 0 8px 24px rgba(11, 26, 46, 0.22), 0 2px 6px rgba(11, 26, 46, 0.12);
+	transition: transform 0.15s ease;
+}
+
+.mob-b__btn:hover {
+	transform: translateY(-2px);
+}
+
+.mob-b__btn:active {
+	transform: scale(0.97);
+}
+
+.mob-b__badge {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	overflow: hidden;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.18);
+	background: color-mix(in srgb, var(--mob-on) 18%, transparent);
+}
+
+.mob-b__icon {
+	display: block;
+	width: 22px;
+	height: 22px;
+}
+
+.mob-b__logo {
+	display: block;
+	width: 40px;
+	height: 40px;
+	max-width: none;
+	border-radius: 50%;
+	object-fit: cover;
+	background: #fff;
+}
+
+/* ---- the card */
+
+.mob-b__card {
+	position: absolute;
+	bottom: 72px;
+	width: min(360px, calc(100vw - 32px));
+	max-height: calc(100vh - 110px);
+	overflow: auto;
+	background: #fff;
+	border-radius: 20px;
+	box-shadow: 0 18px 50px rgba(11, 26, 46, 0.25), 0 4px 12px rgba(11, 26, 46, 0.12);
+	transform-origin: bottom right;
+	animation: mob-b-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mob-b--right .mob-b__card {
+	right: 0;
+}
+
+.mob-b--left .mob-b__card {
+	left: 0;
+	transform-origin: bottom left;
+}
+
+@keyframes mob-b-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px) scale(0.96);
+	}
+}
+
+.mob-b__head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 10px 12px 14px;
+	background: var(--mob-c);
+	color: var(--mob-on);
+}
+
+.mob-b__title {
+	flex: 1;
+	min-width: 0;
+	font-size: 17px;
+	font-weight: 700;
+	line-height: 1.25;
+	color: inherit;
+}
+
+.mob-b__close {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: inherit;
+}
+
+.mob-b__close:hover {
+	background: color-mix(in srgb, var(--mob-on) 15%, transparent);
+}
+
+.mob-b__close .mob-b__icon {
+	width: 20px;
+	height: 20px;
+}
+
+.mob-b__form {
+	display: grid;
+	gap: 12px;
+	padding: 16px;
+}
+
+.mob-b__field {
+	display: grid;
+	gap: 5px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #44546b;
+}
+
+.mob-b__field input,
+.mob-b__field textarea {
+	display: block;
+	width: 100%;
+	height: auto;
+	min-height: 0;
+	padding: 11px 12px;
+	border: 1.5px solid #d6deea;
+	border-radius: 12px;
+	background: #fff;
+	color: #0b1a2e;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.35;
+	box-shadow: none;
+	outline: 0;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.mob-b__field textarea {
+	resize: vertical;
+}
+
+.mob-b__field input:focus,
+.mob-b__field textarea:focus {
+	border-color: var(--mob-c);
+	box-shadow: 0 0 0 3px rgba(10, 108, 255, 0.2);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--mob-c) 25%, transparent);
+}
+
+.mob-b__hp {
+	position: absolute !important;
+	left: -9999px !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+.mob-b__error {
+	font-size: 14px;
+	font-weight: 600;
+	color: #c62828;
+}
+
+.mob-b__send {
+	height: 48px;
+	border: 0;
+	border-radius: 12px;
+	background: var(--mob-c);
+	color: var(--mob-on);
+	font-size: 16px;
+	font-weight: 700;
+	text-align: center;
+}
+
+.mob-b__send:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.mob-b__thanks {
+	display: grid;
+	justify-items: center;
+	gap: 10px;
+	padding: 28px 20px;
+	text-align: center;
+	font-size: 16px;
+	font-weight: 600;
+	outline: 0;
+}
+
+.mob-b__thanks .mob-b__icon {
+	width: 44px;
+	height: 44px;
+	color: #17a34a;
+}
+
+.mob-b__powered {
+	padding: 10px 16px 12px;
+	border-top: 1px solid #eef2f7;
+	text-align: center;
+	font-size: 12px;
+	line-height: 1.3;
+}
+
+.mob-b__powered a {
+	color: #7d8a9c;
+	text-decoration: none;
+}
+
+.mob-b__powered a:hover {
+	text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+	.mob-b {
+		bottom: max(16px, env(safe-area-inset-bottom));
+	}
+
+	.mob-b--right {
+		right: 16px;
+	}
+
+	.mob-b--left {
+		left: 16px;
+	}
+
+	.mob-b__btn {
+		height: 52px;
+		padding-right: 16px;
+		font-size: 15px;
+	}
+
+	.mob-b__card {
+		bottom: 66px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mob-b__card {
+		animation: none;
+	}
+
+	.mob-b__btn {
+		transition: none;
+	}
+}
+
+/* ---- live preview on the settings page */
+
+.mob-b--preview {
+	position: absolute;
+	z-index: 1;
+	bottom: 16px;
+}

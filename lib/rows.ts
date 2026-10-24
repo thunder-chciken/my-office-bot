@@ -61,9 +61,11 @@ export function leadFromRow(l: LeadRow, nameForEmail: (to: unknown) => string, n
     address: l.address ?? "",
     minutesAgo: ago(l.received_at),
     status: statusFor[l.state] ?? "new",
-    // Plugin leads say which builder and form they came from (D57).
+    // Plugin leads say which builder and form they came from (D57); the plugin's own chat bubble just says so (D59).
     source:
-      l.channel === "plugin" && l.extra?.builder
+      l.channel === "plugin" && l.extra?.builder === "bubble"
+        ? "Chat bubble"
+        : l.channel === "plugin" && l.extra?.builder
         ? [builderNames[l.extra.builder] ?? l.extra.builder, l.extra.form].filter(Boolean).join(" · ")
         : "Website form",
     urgent: l.urgency === "urgent",

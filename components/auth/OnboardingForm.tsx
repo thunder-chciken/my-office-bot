@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabase/client";
 import { AuthShell } from "./AuthForms";
+import { REF_KEY, readRef } from "../RefCapture";
 
 export function OnboardingForm({ defaultName, email }: { defaultName: string; email: string }) {
   const router = useRouter();
@@ -28,6 +29,14 @@ export function OnboardingForm({ defaultName, email }: { defaultName: string; em
       setError("Couldn't set that up. Please try again.");
       setBusy(false);
       return;
+    }
+    // Credit the customer whose chat bubble sent them (D59). Never blocks signing up.
+    const ref = readRef();
+    if (ref) {
+      await browserClient().rpc("set_my_referral", { p_ref: ref });
+      try {
+        localStorage.removeItem(REF_KEY);
+      } catch {}
     }
     router.replace("/app");
     router.refresh();
