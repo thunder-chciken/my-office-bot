@@ -4,7 +4,7 @@ Tags: leads, contact form, bricks, divi, notifications
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.2.1
+Stable tag: 0.2.2
 License: GPLv2 or later
 
 Sends your existing website form submissions to My Office Bot, so new leads reach your phone in seconds. Your forms stay exactly as they are.
@@ -32,6 +32,9 @@ This plugin sends form submissions to My Office Bot (https://myofficebot.app), t
 4. Send a test from your contact form. It appears in My Office Bot and under Settings > My Office Bot > Your forms.
 
 == Changelog ==
+
+= 0.2.2 =
+* Settings page says where to add the people who get lead alerts (Team & alerts in the My Office Bot app).
 
 = 0.2.1 =
 * Fluent Forms support.

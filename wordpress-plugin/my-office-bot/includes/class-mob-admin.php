@@ -221,6 +221,11 @@ class MOB_Admin {
 					<?php submit_button( __( 'Test connection', 'my-office-bot' ), 'secondary', 'submit', false ); ?>
 				</form>
 			<?php endif; ?>
+			<p>
+				<strong><?php esc_html_e( 'Who gets alerts?', 'my-office-bot' ); ?></strong>
+				<?php esc_html_e( 'Add people in the My Office Bot app under Team & alerts. Everyone on the list gets every lead.', 'my-office-bot' ); ?>
+				<a href="https://myofficebot.app/app" target="_blank" rel="noopener"><?php esc_html_e( 'Open My Office Bot', 'my-office-bot' ); ?></a>
+			</p>
 
 			<h2><?php esc_html_e( '2. Your forms', 'my-office-bot' ); ?></h2>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
