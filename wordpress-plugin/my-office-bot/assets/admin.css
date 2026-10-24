@@ -1,0 +1,774 @@
+/* The My Office Bot screen in WordPress (D61): the app's look (blues on white, big rounded cards). */
+
+.mob-app {
+	--blue: #0a6cff;
+	--blue-press: #0057d9;
+	--blue-ink: #0047b3;
+	--blue-50: #f3f8ff;
+	--blue-100: #e6f0ff;
+	--ink: #0b1a2e;
+	--ink-2: #44546b;
+	--ink-3: #7d8a9c;
+	--line: #e4eaf2;
+	--green: #17a34a;
+	--green-50: #e8f8ee;
+	--amber: #9a6200;
+	--amber-50: #fdf3e1;
+	--red: #c62828;
+	--red-50: #fdeced;
+	--shadow: 0 1px 2px rgba(11, 26, 46, 0.04), 0 8px 24px rgba(11, 26, 46, 0.06);
+	max-width: 1080px;
+	margin: 20px 20px 40px 0;
+	color: var(--ink);
+	font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+.mob-app * {
+	box-sizing: border-box;
+}
+
+.mob-app h2,
+.mob-app h3,
+.mob-app p {
+	margin: 0;
+	color: inherit;
+}
+
+.mob-app h2 {
+	font-size: 22px;
+	font-weight: 750;
+	letter-spacing: -0.01em;
+	line-height: 1.25;
+}
+
+.mob-app h3 {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 17px;
+	font-weight: 700;
+}
+
+.mob-app a {
+	color: var(--blue);
+}
+
+.mob-ico {
+	flex: none;
+	display: block;
+}
+
+/* ---- header */
+
+.mob-top {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 22px;
+}
+
+.mob-mascot {
+	width: 48px;
+	height: 48px;
+}
+
+.mob-wordmark {
+	font-size: 24px;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+}
+
+.mob-wordmark span {
+	color: var(--blue);
+}
+
+.mob-top-link {
+	margin-left: auto;
+}
+
+/* ---- buttons, inputs, switches */
+
+.mob-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 44px;
+	padding: 0 18px;
+	border: 0;
+	border-radius: 14px;
+	font: inherit;
+	font-size: 15px;
+	font-weight: 700;
+	text-decoration: none;
+	cursor: pointer;
+	transition: transform 0.12s ease, background-color 0.15s ease;
+}
+
+.mob-btn:active {
+	transform: scale(0.98);
+}
+
+.mob-btn:focus-visible,
+.mob-input:focus-visible,
+.mob-select:focus-visible,
+.mob-switch input:focus-visible + .mob-switch-ui,
+.mob-segment input:focus-visible + span,
+.mob-tabs a:focus-visible {
+	outline: 3px solid #4da8ff;
+	outline-offset: 2px;
+}
+
+.mob-btn-primary {
+	background: var(--blue);
+	color: #fff;
+	box-shadow: 0 6px 16px rgba(10, 108, 255, 0.25);
+}
+
+.mob-app a.mob-btn-primary,
+.mob-btn-primary:hover {
+	color: #fff;
+}
+
+.mob-btn-primary:hover {
+	background: var(--blue-press);
+}
+
+.mob-btn-soft {
+	background: var(--blue-100);
+	color: var(--blue-ink);
+}
+
+.mob-app a.mob-btn-soft {
+	color: var(--blue-ink);
+}
+
+.mob-btn-soft:hover {
+	background: #d6e7ff;
+}
+
+.mob-btn-ghost {
+	background: transparent;
+	color: var(--ink-2);
+}
+
+.mob-btn-ghost:hover {
+	background: var(--blue-50);
+}
+
+.mob-link {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--blue);
+	font: inherit;
+	cursor: pointer;
+}
+
+.mob-link:hover {
+	text-decoration: underline;
+}
+
+.mob-input,
+.mob-select {
+	min-height: 46px;
+	padding: 0 14px;
+	border: 2px solid var(--line);
+	border-radius: 12px;
+	background: #fff;
+	color: var(--ink);
+	font: inherit;
+	font-size: 15px;
+	box-shadow: none;
+}
+
+.mob-app .mob-input:focus,
+.mob-app .mob-select:focus {
+	border-color: var(--blue);
+	box-shadow: none;
+}
+
+.mob-select {
+	width: 100%;
+	max-width: none;
+}
+
+.mob-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.mob-switch input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.mob-switch-ui {
+	position: relative;
+	flex: none;
+	width: 46px;
+	height: 28px;
+	border-radius: 999px;
+	background: #d3dbe6;
+	transition: background-color 0.18s ease;
+}
+
+.mob-switch-ui::after {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(11, 26, 46, 0.25);
+	transition: transform 0.18s ease;
+}
+
+.mob-switch input:checked + .mob-switch-ui {
+	background: var(--green);
+}
+
+.mob-switch input:checked + .mob-switch-ui::after {
+	transform: translateX(18px);
+}
+
+.mob-switch small {
+	color: var(--ink-3);
+	font-size: 13px;
+}
+
+.mob-switch.is-missing {
+	color: var(--ink-3);
+}
+
+.mob-switch-big {
+	padding: 14px 16px;
+	border-radius: 16px;
+	background: var(--blue-50);
+	width: 100%;
+}
+
+/* ---- notices */
+
+.mob-toast {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 18px;
+	padding: 14px 16px;
+	border-radius: 16px;
+	font-weight: 600;
+}
+
+.mob-toast.is-ok {
+	background: var(--green-50);
+	color: #116b33;
+}
+
+.mob-toast.is-error {
+	background: var(--red-50);
+	color: var(--red);
+}
+
+/* ---- cards */
+
+.mob-card {
+	display: grid;
+	gap: 12px;
+	margin-bottom: 16px;
+	padding: 22px;
+	border: 1px solid var(--line);
+	border-radius: 22px;
+	background: #fff;
+	box-shadow: var(--shadow);
+}
+
+.mob-card > *,
+.mob-step-body > * {
+	min-width: 0;
+}
+
+.mob-card > p,
+.mob-step p,
+.mob-howto {
+	color: var(--ink-2);
+}
+
+.mob-fine {
+	color: var(--ink-3);
+	font-size: 13px;
+}
+
+.mob-warn {
+	color: var(--red);
+}
+
+.mob-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+
+.mob-inline {
+	display: inline-flex;
+	margin: 0;
+}
+
+/* ---- setup */
+
+.mob-hero {
+	margin-bottom: 18px;
+	padding: 26px;
+	border-radius: 26px;
+	background: linear-gradient(135deg, var(--blue), #4da8ff);
+	color: #fff;
+	box-shadow: 0 12px 30px rgba(10, 108, 255, 0.25);
+}
+
+.mob-hero h2 {
+	margin-top: 4px;
+	font-size: 26px;
+}
+
+.mob-eyebrow {
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	opacity: 0.85;
+}
+
+.mob-progress {
+	height: 8px;
+	margin-top: 16px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.3);
+	overflow: hidden;
+}
+
+.mob-progress span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: #fff;
+	transition: width 0.4s ease;
+}
+
+.mob-steps {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.mob-step {
+	margin: 0;
+	padding: 18px 20px;
+	border: 1px solid var(--line);
+	border-radius: 22px;
+	background: #fff;
+	box-shadow: var(--shadow);
+}
+
+.mob-step-head {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.mob-step-num {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: var(--blue-100);
+	color: var(--blue-ink);
+	font-weight: 800;
+}
+
+.mob-step.is-done .mob-step-num {
+	background: var(--green-50);
+	color: var(--green);
+}
+
+.mob-step.is-later {
+	opacity: 0.6;
+	box-shadow: none;
+}
+
+.mob-step.is-current {
+	border-color: var(--blue);
+	box-shadow: 0 0 0 4px var(--blue-100), var(--shadow);
+}
+
+.mob-step.is-current .mob-step-num {
+	background: var(--blue);
+	color: #fff;
+}
+
+.mob-step-body {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 14px;
+	margin: 16px 0 4px 50px;
+}
+
+.mob-howto {
+	display: grid;
+	gap: 6px;
+	margin: 0 0 0 18px;
+	padding: 0;
+}
+
+.mob-code-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.mob-code-row .mob-input {
+	flex: 1 1 280px;
+}
+
+.mob-found {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	border-radius: 12px;
+	background: var(--green-50);
+	color: #116b33;
+	font-weight: 600;
+}
+
+.mob-found.is-warn {
+	background: var(--amber-50);
+	color: var(--amber);
+}
+
+/* ---- dashboard */
+
+.mob-tabs {
+	display: inline-flex;
+	max-width: 100%;
+	overflow-x: auto;
+	scrollbar-width: none;
+	gap: 4px;
+	margin-bottom: 18px;
+	padding: 4px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: #fff;
+}
+
+.mob-tabs a {
+	padding: 9px 16px;
+	border-radius: 10px;
+	color: var(--ink-2);
+	font-weight: 700;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.mob-tabs a:hover {
+	background: var(--blue-50);
+}
+
+.mob-tabs a.is-active {
+	background: var(--blue);
+	color: #fff;
+}
+
+.mob-status {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 16px;
+}
+
+.mob-status > div {
+	flex: 1 1 220px;
+	min-width: 0;
+}
+
+.mob-status p {
+	margin-top: 2px;
+	color: var(--ink-2);
+}
+
+.mob-dot {
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: var(--green);
+	box-shadow: 0 0 0 6px var(--green-50);
+}
+
+.mob-status.is-warn .mob-dot {
+	background: #e89b00;
+	box-shadow: 0 0 0 6px var(--amber-50);
+}
+
+.mob-stats {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.mob-stat {
+	display: grid;
+	gap: 2px;
+	padding: 18px 20px;
+	border: 1px solid var(--line);
+	border-radius: 20px;
+	background: #fff;
+	box-shadow: var(--shadow);
+	text-decoration: none;
+}
+
+.mob-app a.mob-stat {
+	color: var(--ink);
+}
+
+.mob-stat:hover {
+	border-color: #c9dcf7;
+}
+
+.mob-stat-num {
+	font-size: 30px;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: var(--blue);
+}
+
+.mob-stat.is-warn .mob-stat-num {
+	color: #c27a00;
+}
+
+.mob-stat-label {
+	color: var(--ink-2);
+	font-weight: 600;
+}
+
+.mob-details summary,
+.mob-fields summary {
+	cursor: pointer;
+	font-weight: 700;
+	color: var(--ink);
+}
+
+.mob-details[open] summary {
+	margin-bottom: 4px;
+}
+
+.mob-footer {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--ink-3);
+	font-size: 13px;
+}
+
+.mob-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px 24px;
+}
+
+.mob-form-head {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.mob-form-head p {
+	margin-top: 2px;
+	color: var(--ink-3);
+	font-size: 13px;
+}
+
+.mob-fields summary {
+	color: var(--blue);
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.mob-field-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+	gap: 12px;
+	margin-top: 12px;
+}
+
+.mob-field {
+	display: grid;
+	gap: 4px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ink-2);
+}
+
+.mob-empty {
+	text-align: center;
+	justify-items: center;
+	padding: 32px 22px;
+}
+
+.mob-list {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+}
+
+.mob-list li {
+	margin: 0;
+	padding: 10px 14px;
+	border-radius: 12px;
+	background: var(--red-50);
+}
+
+.mob-list span {
+	color: var(--red);
+}
+
+/* ---- chat bubble editor */
+
+.mob-bubble-wrap {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 18px;
+}
+
+.mob-bubble-form {
+	flex: 1 1 460px;
+	min-width: 0;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 18px;
+	margin: 0;
+}
+
+.mob-row {
+	display: grid;
+	gap: 6px;
+}
+
+.mob-label {
+	font-weight: 700;
+	font-size: 14px;
+}
+
+.mob-segment {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.mob-segment input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.mob-segment span {
+	display: inline-block;
+	padding: 8px 14px;
+	border: 2px solid var(--line);
+	border-radius: 999px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mob-segment input:checked + span {
+	border-color: var(--blue);
+	background: var(--blue-100);
+	color: var(--blue-ink);
+}
+
+.mob-text-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 14px;
+}
+
+.mob-logo-pick {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 6px;
+}
+
+.mob-logo-pick img {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 1px solid var(--line);
+}
+
+.mob-preview {
+	position: relative;
+	flex: 0 0 400px;
+	max-width: 100%;
+	height: 620px;
+	border: 1px solid var(--line);
+	border-radius: 22px;
+	overflow: hidden;
+	background: repeating-linear-gradient(180deg, #f6f9fd 0 28px, #fff 28px 56px);
+	box-shadow: var(--shadow);
+}
+
+.mob-preview-label {
+	position: absolute;
+	top: 12px;
+	left: 16px;
+	color: var(--ink-3);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+/* WordPress's color picker, a little rounder to match. */
+.mob-app .wp-picker-container .wp-color-result.button {
+	min-height: 40px;
+	border-radius: 10px;
+}
+
+@media (max-width: 782px) {
+	.mob-app {
+		margin: 12px 12px 30px 0;
+	}
+
+	.mob-stats {
+		grid-template-columns: 1fr;
+	}
+
+	.mob-step-body {
+		margin-left: 0;
+	}
+
+	.mob-top-link {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mob-app *,
+	.mob-app *::after {
+		transition: none !important;
+	}
+}

@@ -7,7 +7,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-foreach ( array( 'mob_connection_code', 'mob_business', 'mob_queue', 'mob_failed', 'mob_last_sent', 'mob_forms', 'mob_bubble' ) as $option ) {
+foreach ( array( 'mob_connection_code', 'mob_business', 'mob_queue', 'mob_failed', 'mob_last_sent', 'mob_forms', 'mob_bubble', 'mob_setup' ) as $option ) {
 	delete_option( $option );
 }
 foreach ( array( 'bricks', 'divi', 'cf7', 'wpforms', 'gravity', 'elementor', 'fluentform', 'bubble' ) as $builder ) {

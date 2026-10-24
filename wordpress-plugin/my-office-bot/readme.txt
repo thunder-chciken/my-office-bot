@@ -4,7 +4,7 @@ Tags: leads, contact form, bricks, divi, notifications
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.2.2
+Stable tag: 0.3.0
 License: GPLv2 or later
 
 Sends your existing website form submissions to My Office Bot, so new leads reach your phone in seconds. Your forms stay exactly as they are.
@@ -18,7 +18,7 @@ Works with the forms you already have: Bricks, Divi, Contact Form 7, WPForms, Gr
 * Only the name, phone, email, address, service and message fields are sent, plus answers to multiple-choice questions (like budget or start date), added to the message. Never passwords, payment details or uploaded files.
 * If My Office Bot can't be reached, leads wait in a queue on your site and are retried automatically.
 
-Optional chat bubble: a "Get a quote" button in the corner of every page that opens a short form (name, phone number and what the visitor needs). Pick your brand color, an icon or your logo, the wording and the corner under Settings > My Office Bot. It's off until you switch it on. A small "Powered by My Office Bot" link under the form can be switched off there too.
+Optional chat bubble: a "Get a quote" button in the corner of every page that opens a short form (name, phone number and what the visitor needs). Pick your brand color, an icon or your logo, the wording and the corner on the plugin's Chat bubble screen. It's off until you switch it on. A small "Powered by My Office Bot" link under the form can be switched off there too.
 
 == External service ==
 
@@ -27,11 +27,14 @@ This plugin sends form submissions to My Office Bot (https://myofficebot.app), t
 == Installation ==
 
 1. Upload the zip in Plugins > Add New > Upload Plugin, then activate.
-2. In the My Office Bot app, open Website & forms and copy your connection code.
-3. In WordPress, go to Settings > My Office Bot, paste the code and click Save and test.
-4. Send a test from your contact form. It appears in My Office Bot and under Settings > My Office Bot > Your forms.
+2. Click My Office Bot in the WordPress sidebar. A short setup walks you through the rest:
+3. Paste your connection code from Website & forms in the My Office Bot app and connect.
+4. Send a test from your contact form so the plugin can find it, choose whether to show the chat bubble, and finish.
 
 == Changelog ==
+
+= 0.3.0 =
+* My Office Bot now has its own place in the WordPress sidebar, with a step-by-step setup and a dashboard (Overview, Forms, Chat bubble, Delivery) styled like the app.
 
 = 0.2.2 =
 * Settings page says where to add the people who get lead alerts (Team & alerts in the My Office Bot app).

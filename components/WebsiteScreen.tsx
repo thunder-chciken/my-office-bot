@@ -102,9 +102,9 @@ export function WebsiteScreen({
 
         <ol className="wp-steps">
           <li>Download the plugin and upload it in WordPress: Plugins → Add New → Upload Plugin, then Activate.</li>
-          <li>In WordPress, open Settings → My Office Bot and paste your connection code below. Click Save and test.</li>
+          <li>In WordPress, click My Office Bot in the sidebar and paste your connection code below. A short setup walks you through the rest.</li>
           <li>Send a test from your contact form. It shows up here in Leads.</li>
-          <li>Optional: turn on the chat bubble on the same settings page, a &ldquo;Get a quote&rdquo; button in your brand color on every page.</li>
+          <li>Optional: turn on the chat bubble during setup, a &ldquo;Get a quote&rdquo; button in your brand color on every page.</li>
         </ol>
 
         <a className="btn btn-primary btn-block" href="/downloads/my-office-bot-wordpress.zip" download>

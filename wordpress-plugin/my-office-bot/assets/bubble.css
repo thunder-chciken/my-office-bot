@@ -325,4 +325,17 @@
 	position: absolute;
 	z-index: 1;
 	bottom: 16px;
+	left: 16px;
+	right: 16px;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.mob-b--preview.mob-b--left {
+	justify-content: flex-start;
+}
+
+.mob-b--preview .mob-b__card {
+	width: min(360px, 100%);
+	max-height: none;
 }

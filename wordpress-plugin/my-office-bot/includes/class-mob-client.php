@@ -156,7 +156,7 @@ class MOB_Client {
 	public static function send( $endpoint, array $payload ) {
 		$creds = self::credentials();
 		if ( ! $creds ) {
-			return array( 'ok' => false, 'done' => false, 'message' => __( 'Not connected yet. Paste your connection code in Settings > My Office Bot.', 'my-office-bot' ), 'body' => array() );
+			return array( 'ok' => false, 'done' => false, 'message' => __( 'Not connected yet. Paste your connection code under My Office Bot in the WordPress sidebar.', 'my-office-bot' ), 'body' => array() );
 		}
 		$body = wp_json_encode( $payload );
 		$ts   = (string) time();
