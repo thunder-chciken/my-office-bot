@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { BellRing, Building2, CheckCircle2, Globe, Inbox } from "lucide-react";
+import { BellRing, Building2, CalendarDays, CheckCircle2, Globe, Inbox } from "lucide-react";
 import {
   firstName,
   seedContacts,
@@ -14,17 +14,31 @@ import {
   type LeadStatus,
 } from "@/lib/data";
 import { loadTestTarget, saveTestTarget, type TestTarget } from "@/lib/contact";
+import {
+  blankEvent,
+  dayLabel,
+  jobFromLead,
+  nextWorkday,
+  seedCrews,
+  seedSchedule,
+  todayKey,
+  type Job,
+  type ScheduleEvent,
+} from "@/lib/schedule";
 import { LeadsScreen } from "./LeadsScreen";
 import { LeadSheet, type ContactMethod } from "./LeadSheet";
 import { AlertsScreen } from "./AlertsScreen";
 import { WebsiteScreen } from "./WebsiteScreen";
 import { BusinessScreen } from "./BusinessScreen";
+import { ScheduleScreen } from "./ScheduleScreen";
+import { EditorSheet, EventSheet, NotifySheet, type EditTarget } from "./ScheduleSheets";
 import { Mascot } from "./ui";
 
-type Tab = "leads" | "alerts" | "website" | "business";
+type Tab = "leads" | "schedule" | "alerts" | "website" | "business";
 
 const tabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
   { id: "leads", label: "Leads", Icon: Inbox },
+  { id: "schedule", label: "Schedule", Icon: CalendarDays },
   { id: "alerts", label: "Alerts", Icon: BellRing },
   { id: "website", label: "Website", Icon: Globe },
   { id: "business", label: "Business", Icon: Building2 },
@@ -42,6 +56,12 @@ export default function App() {
   const bannerTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const testIndex = useRef(0);
   const [test, setTest] = useState<TestTarget>({ phone: "", email: "" });
+  const [crews] = useState(seedCrews);
+  const [jobs, setJobs] = useState<Job[]>(() => seedSchedule().jobs);
+  const [events, setEvents] = useState<ScheduleEvent[]>(() => seedSchedule().events);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<EditTarget | null>(null);
+  const [notify, setNotify] = useState<{ event: ScheduleEvent; moved: boolean } | null>(null);
 
   useEffect(() => setTest(loadTestTarget()), []);
 
@@ -85,6 +105,43 @@ export default function App() {
     patchLead(lead.id, (l) => ({ ...l, status }));
     if (status === "booked") showToast(`${firstName(lead.name)} marked as booked`);
   };
+
+  // ---- scheduling (docs/SCHEDULING.md)
+
+  const newBooking = (date: string, job?: Job) =>
+    setEditing({ draft: { ...blankEvent("appointment", date), jobId: job?.id, personIds: ["c1"] }, job, mode: "new" });
+
+  const scheduleLead = (lead: Lead) => {
+    setOpenId(null);
+    setTab("schedule");
+    newBooking(nextWorkday(todayKey()), jobs.find((j) => j.leadId === lead.id) ?? jobFromLead(lead));
+  };
+
+  const saveEvent = (draft: ScheduleEvent, job: Job | undefined, mode: EditTarget["mode"]) => {
+    if (job) setJobs((js) => (js.some((j) => j.id === job.id) ? js : [...js, job]));
+    setEvents((es) => (es.some((e) => e.id === draft.id) ? es.map((e) => (e.id === draft.id ? draft : e)) : [...es, draft]));
+    if (job?.leadId && mode === "new") {
+      patchLead(job.leadId, (l) => ({
+        ...l,
+        status: "booked",
+        alerts: [...l.alerts, { minutesAgo: 0, text: `Booked ${draft.title.toLowerCase()} for ${dayLabel(draft.date)}`, ok: true }],
+      }));
+    }
+    setEditing(null);
+    if (draft.type === "unavailable") showToast("Time off saved");
+    else if (mode === "edit") showToast("Saved");
+    else setNotify({ event: draft, moved: mode === "move" });
+  };
+
+  const setEventStatus = (e: ScheduleEvent, status: ScheduleEvent["status"]) => {
+    setEvents((es) => es.map((x) => (x.id === e.id ? { ...x, status } : x)));
+    if (status === "canceled") {
+      setEventId(null);
+      showToast("Canceled");
+    } else if (status === "done") showToast("Marked done");
+  };
+
+  const openEvent = events.find((e) => e.id === eventId) ?? null;
 
   const sendTestLead = () => {
     const base = testLeadPool[testIndex.current % testLeadPool.length]!;
@@ -156,6 +213,19 @@ export default function App() {
             >
               {tab === "leads" && (
                 <LeadsScreen leads={leads} test={test} onOpen={setOpenId} onContact={contactLead} />
+              )}
+              {tab === "schedule" && (
+                <ScheduleScreen
+                  events={events}
+                  jobs={jobs}
+                  crews={crews}
+                  contacts={contacts}
+                  leads={leads}
+                  onOpenEvent={setEventId}
+                  onNew={(date) => newBooking(date)}
+                  onScheduleJob={(job) => newBooking(nextWorkday(todayKey()), job)}
+                  onScheduleLead={scheduleLead}
+                />
               )}
               {tab === "alerts" && (
                 <AlertsScreen
@@ -242,6 +312,53 @@ export default function App() {
             onClose={() => setOpenId(null)}
             onContact={contactLead}
             onStatus={setStatus}
+            onSchedule={scheduleLead}
+          />
+
+          <EventSheet
+            event={openEvent}
+            job={jobs.find((j) => j.id === openEvent?.jobId)}
+            events={events}
+            crews={crews}
+            contacts={contacts}
+            test={test}
+            onClose={() => setEventId(null)}
+            onMove={(e) => {
+              setEventId(null);
+              setEditing({ draft: { ...e }, job: jobs.find((j) => j.id === e.jobId), mode: "move", original: e });
+            }}
+            onEdit={(e) => {
+              setEventId(null);
+              setEditing({ draft: { ...e }, job: jobs.find((j) => j.id === e.jobId), mode: "edit", original: e });
+            }}
+            onNotify={(e) => {
+              setEventId(null);
+              setNotify({ event: e, moved: false });
+            }}
+            onStatus={setEventStatus}
+          />
+
+          <EditorSheet
+            target={editing}
+            events={events}
+            crews={crews}
+            contacts={contacts}
+            onClose={() => setEditing(null)}
+            onSave={saveEvent}
+          />
+
+          <NotifySheet
+            target={notify}
+            job={jobs.find((j) => j.id === notify?.event.jobId)}
+            crews={crews}
+            contacts={contacts}
+            test={test}
+            onClose={() => setNotify(null)}
+            onSent={(e, how) => {
+              setEvents((es) => es.map((x) => (x.id === e.id ? { ...x, status: "confirmed" } : x)));
+              setNotify(null);
+              showToast(how === "text" ? "Opening Messages…" : "Opening Mail…");
+            }}
           />
 
           <div className="toast-wrap" aria-live="polite">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, FlaskConical, Mail, MapPin, MessageSquare, Navigation, Phone, Send } from "lucide-react";
+import { CalendarPlus, Check, Clock, FlaskConical, Mail, MapPin, MessageSquare, Navigation, Phone, Send } from "lucide-react";
 import { firstName, quickReplies, statusLabel, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
 import { mailHref, mapsHref, reach, smsHref, telHref, useIsApple, type TestTarget } from "@/lib/contact";
 import { Avatar, Segmented, Sheet } from "./ui";
@@ -13,12 +13,14 @@ export function LeadSheet({
   onClose,
   onContact,
   onStatus,
+  onSchedule,
 }: {
   lead: Lead | null;
   test: TestTarget;
   onClose: () => void;
   onContact: (lead: Lead, how: ContactMethod, text?: string) => void;
   onStatus: (lead: Lead, status: LeadStatus) => void;
+  onSchedule: (lead: Lead) => void;
 }) {
   const apple = useIsApple();
   const to = lead ? reach(lead, test) : null;
@@ -104,6 +106,10 @@ export function LeadSheet({
               </a>
             ))}
           </div>
+
+          <button className="btn btn-primary btn-block schedule-lead" onClick={() => onSchedule(lead)}>
+            <CalendarPlus size={22} strokeWidth={2.5} /> Schedule a visit
+          </button>
 
           <h4 className="sub-title">Status</h4>
           <Segmented

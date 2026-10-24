@@ -1,6 +1,11 @@
 # Scheduling calendar — plan (R&D 010)
 
-Planned 2026-10-23 by Claude and ChatGPT ("Jake"), for Matt. Status: **approved plan, not built yet.**
+Planned 2026-10-23 by Claude and ChatGPT ("Jake"), for Matt.
+
+**Build status (2026-10-23):**
+- **Database: live.** `supabase/migrations/0003_scheduling.sql` is run, and the conflict rule passes `supabase/tests/scheduling_conflicts.sql`.
+- **App: built on demo data.** The Schedule tab works in the prototype, including lead → visit, conflicts, rain moves and the homeowner text. It doesn't save to the database yet; that needs sign-in (Supabase Auth).
+- **Staff reminder email: not built yet.** The evening-before digest needs real saved events, so it comes after sign-in. It will use a once-a-day Vercel cron (allowed on Hobby), logged in `schedule_notifications`.
 
 **The one-line rule:** the calendar should feel like an extension of the lead inbox, not the start of another ServiceTitan. Any scheduling action should take fewer steps than opening the contractor's own calendar app and adding the event by hand.
 
