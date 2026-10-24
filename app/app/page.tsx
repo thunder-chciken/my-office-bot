@@ -36,7 +36,7 @@ export default async function AppPage() {
 
   const { data: membership } = await supabase
     .from("memberships")
-    .select("account_id, accounts(name)")
+    .select("account_id, accounts(name, phone, city, timezone, trades)")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!membership) redirect("/onboarding");
@@ -93,18 +93,23 @@ export default async function AppPage() {
       }),
   }));
 
-  const accounts = membership.accounts as unknown as { name: string } | { name: string }[] | null;
+  type AccountRow = { name: string; phone: string | null; city: string | null; timezone: string; trades: string[] };
+  const accounts = membership.accounts as unknown as AccountRow | AccountRow[] | null;
+  const row = Array.isArray(accounts) ? accounts[0] : accounts;
   const meta = user.user_metadata ?? {};
   const owner = contacts[0];
   const account: Account = {
     live: true,
-    name: (Array.isArray(accounts) ? accounts[0]?.name : accounts?.name) ?? "My business",
-    city: "",
+    name: row?.name ?? "My business",
+    phone: row?.phone ?? "",
+    city: row?.city ?? "",
+    timezone: row?.timezone ?? "America/Chicago",
+    trades: row?.trades ?? [],
     website: site?.domain ?? "",
     ownerName: owner?.name ?? String(meta.full_name ?? meta.name ?? ""),
     ownerEmail: user.email ?? "",
     siteKey: site?.public_key ?? null,
   };
 
-  return <App account={account} initialLeads={leads} initialContacts={contacts} />;
+  return <App account={account} initialLeads={leads} initialContacts={contacts} variant="app" />;
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { BellRing, Building2, CalendarDays, CheckCircle2, Globe, Inbox } from "lucide-react";
+import { AlertCircle, BellRing, Building2, CalendarDays, CheckCircle2, Globe, Inbox, Users } from "lucide-react";
 import {
   firstName,
   seedContacts,
@@ -14,7 +14,9 @@ import {
   type Lead,
   type LeadStatus,
 } from "@/lib/data";
-import { AccountProvider, demoAccount, type Account } from "@/lib/account";
+import { AccountProvider, LayoutProvider, demoAccount, type Account } from "@/lib/account";
+import { removeContact, saveBusiness, saveContact, saveLeadStatus } from "@/lib/live";
+import { useWide } from "@/lib/useWide";
 import { loadTestTarget, saveTestTarget, type TestTarget } from "@/lib/contact";
 import {
   blankEvent,
@@ -34,9 +36,19 @@ import { WebsiteScreen } from "./WebsiteScreen";
 import { BusinessScreen } from "./BusinessScreen";
 import { ScheduleScreen } from "./ScheduleScreen";
 import { EditorSheet, EventSheet, NotifySheet, type EditTarget } from "./ScheduleSheets";
+import { DeskPage, DesktopShell, LeadsDesk } from "./Desktop";
 import { Mascot } from "./ui";
 
 type Tab = "leads" | "schedule" | "alerts" | "website" | "business";
+
+// Wider labels for the desktop sidebar.
+const deskTabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
+  { id: "leads", label: "Leads", Icon: Inbox },
+  { id: "schedule", label: "Schedule", Icon: CalendarDays },
+  { id: "alerts", label: "Team & alerts", Icon: Users },
+  { id: "website", label: "Website & forms", Icon: Globe },
+  { id: "business", label: "Business profile", Icon: Building2 },
+];
 
 const tabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
   { id: "leads", label: "Leads", Icon: Inbox },
@@ -47,21 +59,27 @@ const tabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
 ];
 
 export default function App({
-  account = demoAccount,
+  account: initialAccount = demoAccount,
   initialLeads,
   initialContacts,
+  variant = "showcase",
 }: {
   account?: Account;
   initialLeads?: Lead[];
   initialContacts?: Contact[];
+  // "showcase": the public demo at / (always the phone frame). "app": a real dashboard that
+  // switches to the desktop layout on wide screens.
+  variant?: "showcase" | "app";
 }) {
+  const [account, setAccount] = useState(initialAccount);
   const live = account.live;
+  const wide = useWide() && variant === "app";
   const [tab, setTab] = useState<Tab>("leads");
   const [leads, setLeads] = useState(initialLeads ?? seedLeads);
   const [contacts, setContacts] = useState(initialContacts ?? seedContacts);
   const [rules, setRules] = useState(seedRules);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
   const [banner, setBanner] = useState<Lead | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const bannerTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -86,11 +104,68 @@ export default function App({
     saveTestTarget(t);
   };
 
-  const showToast = useCallback((msg: string) => {
+  const showToast = useCallback((text: string, error = false) => {
     clearTimeout(toastTimer.current);
-    setToast(msg);
-    toastTimer.current = setTimeout(() => setToast(null), 2400);
+    setToast({ text, error });
+    toastTimer.current = setTimeout(() => setToast(null), error ? 4200 : 2400);
   }, []);
+
+  // ---- saving (signed-in accounts only; the demo just updates the screen)
+
+  const persistStatus = async (id: string, status: LeadStatus) => {
+    if (!live) return;
+    const { error } = await saveLeadStatus(id, status);
+    if (error) showToast(error, true);
+  };
+
+  const saveProfile = async (next: Account) => {
+    if (live) {
+      const { error } = await saveBusiness(next);
+      if (error) {
+        showToast(error, true);
+        return false;
+      }
+    }
+    setAccount(next);
+    showToast("Saved");
+    return true;
+  };
+
+  const addContact = async (c: Contact) => {
+    let saved = c;
+    if (live) {
+      const { id, error } = await saveContact(c, true);
+      if (error || !id) {
+        showToast(error ?? "Couldn't save", true);
+        return false;
+      }
+      saved = { ...c, id };
+    }
+    setContacts((cs) => [...cs, saved]);
+    showToast(`${c.name} added`);
+    return true;
+  };
+
+  const updateContact = async (c: Contact) => {
+    if (live) {
+      const { error } = await saveContact(c, false);
+      if (error) {
+        showToast(error, true);
+        return false;
+      }
+    }
+    setContacts((cs) => cs.map((x) => (x.id === c.id ? c : x)));
+    return true;
+  };
+
+  const dropContact = async (c: Contact) => {
+    if (live) {
+      const { error } = await removeContact(c.id);
+      if (error) return showToast(error, true);
+    }
+    setContacts((cs) => cs.filter((x) => x.id !== c.id));
+    showToast(`${c.name} removed`);
+  };
 
   const patchLead = (id: string, fn: (l: Lead) => Lead) =>
     setLeads((ls) => ls.map((l) => (l.id === id ? fn(l) : l)));
@@ -106,6 +181,7 @@ export default function App({
     showToast(messages[how]);
     if (how === "directions") return;
     const verb = { call: "called", text: "texted", email: "emailed" }[how];
+    if (lead.status === "new") void persistStatus(lead.id, "contacted");
     patchLead(lead.id, (l) => ({
       ...l,
       status: l.status === "new" ? "contacted" : l.status,
@@ -115,6 +191,7 @@ export default function App({
 
   const setStatus = (lead: Lead, status: LeadStatus) => {
     patchLead(lead.id, (l) => ({ ...l, status }));
+    void persistStatus(lead.id, status);
     if (status === "booked") showToast(`${firstName(lead.name)} marked as booked`);
   };
 
@@ -133,6 +210,7 @@ export default function App({
     if (job) setJobs((js) => (js.some((j) => j.id === job.id) ? js : [...js, job]));
     setEvents((es) => (es.some((e) => e.id === draft.id) ? es.map((e) => (e.id === draft.id ? draft : e)) : [...es, draft]));
     if (job?.leadId && mode === "new") {
+      void persistStatus(job.leadId, "booked");
       patchLead(job.leadId, (l) => ({
         ...l,
         status: "booked",
@@ -195,10 +273,173 @@ export default function App({
   const openLead = leads.find((l) => l.id === openId) ?? null;
   const newCount = leads.filter((l) => l.status === "new").length;
 
+  const screenFor = (t: Tab) => {
+    switch (t) {
+      case "leads":
+        return <LeadsScreen leads={leads} test={test} onOpen={setOpenId} onContact={contactLead} />;
+      case "schedule":
+        return (
+          <ScheduleScreen
+            events={events}
+            jobs={jobs}
+            crews={crews}
+            contacts={contacts}
+            leads={leads}
+            onOpenEvent={setEventId}
+            onNew={(date) => newBooking(date)}
+            onScheduleJob={(job) => newBooking(nextWorkday(todayKey()), job)}
+            onScheduleLead={scheduleLead}
+          />
+        );
+      case "alerts":
+        return (
+          <AlertsScreen
+            contacts={contacts}
+            onAdd={addContact}
+            onUpdate={updateContact}
+            onRemove={dropContact}
+            rules={rules}
+            setRules={setRules}
+            onTest={sendTestLead}
+          />
+        );
+      case "website":
+        return <WebsiteScreen onCopy={copy} onTestLead={sendTestLead} />;
+      case "business":
+        return (
+          <BusinessScreen
+            test={test}
+            onTestChange={updateTest}
+            onSaveProfile={saveProfile}
+            stats={
+              live
+                ? {
+                    leads: leads.filter((l) => l.minutesAgo < 7 * 24 * 60).length,
+                    reply: "—",
+                    booked: leads.filter((l) => l.status === "booked").length,
+                  }
+                : {
+                    leads: leads.length + 8,
+                    reply: "6 min",
+                    booked: leads.filter((l) => l.status === "booked").length + 4,
+                  }
+            }
+          />
+        );
+    }
+  };
+
+  // Sheets and the toast, shared by both layouts.
+  const overlays = (
+    <>
+      {!wide && (
+        <LeadSheet
+          lead={openLead}
+          test={test}
+          onClose={() => setOpenId(null)}
+          onContact={contactLead}
+          onStatus={setStatus}
+          onSchedule={scheduleLead}
+        />
+      )}
+
+      <EventSheet
+        event={openEvent}
+        job={jobs.find((j) => j.id === openEvent?.jobId)}
+        events={events}
+        crews={crews}
+        contacts={contacts}
+        test={test}
+        onClose={() => setEventId(null)}
+        onMove={(e) => {
+          setEventId(null);
+          setEditing({ draft: { ...e }, job: jobs.find((j) => j.id === e.jobId), mode: "move", original: e });
+        }}
+        onEdit={(e) => {
+          setEventId(null);
+          setEditing({ draft: { ...e }, job: jobs.find((j) => j.id === e.jobId), mode: "edit", original: e });
+        }}
+        onNotify={(e) => {
+          setEventId(null);
+          setNotify({ event: e, moved: false });
+        }}
+        onStatus={setEventStatus}
+      />
+
+      <EditorSheet
+        target={editing}
+        events={events}
+        crews={crews}
+        contacts={contacts}
+        onClose={() => setEditing(null)}
+        onSave={saveEvent}
+      />
+
+      <NotifySheet
+        target={notify}
+        job={jobs.find((j) => j.id === notify?.event.jobId)}
+        crews={crews}
+        contacts={contacts}
+        test={test}
+        onClose={() => setNotify(null)}
+        onSent={(e, how) => {
+          setEvents((es) => es.map((x) => (x.id === e.id ? { ...x, status: "confirmed" } : x)));
+          setNotify(null);
+          showToast(how === "text" ? "Opening Messages…" : "Opening Mail…");
+        }}
+      />
+
+      <div className="toast-wrap" aria-live="polite">
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              key={toast.text}
+              className={`toast${toast.error ? " is-error" : ""}`}
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+            >
+              {toast.error ? <AlertCircle size={22} strokeWidth={2.5} /> : <CheckCircle2 size={22} strokeWidth={2.5} />}{" "}
+              {toast.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+
+  if (wide) {
+    return (
+      <AccountProvider value={account}>
+        <LayoutProvider value="desktop">
+          <MotionConfig reducedMotion="user">
+            <DesktopShell nav={deskTabs} tab={tab} onTab={setTab} newCount={newCount}>
+              {tab === "leads" ? (
+                <LeadsDesk
+                  leads={leads}
+                  selectedId={openId ?? leads[0]?.id ?? null}
+                  onSelect={setOpenId}
+                  test={test}
+                  onContact={contactLead}
+                  onStatus={setStatus}
+                  onSchedule={scheduleLead}
+                />
+              ) : (
+                <DeskPage key={tab}>{screenFor(tab)}</DeskPage>
+              )}
+              {overlays}
+            </DesktopShell>
+          </MotionConfig>
+        </LayoutProvider>
+      </AccountProvider>
+    );
+  }
+
   return (
     <AccountProvider value={account}>
     <MotionConfig reducedMotion="user">
-      <div className="stage">
+      <div className={`stage${variant === "app" ? " is-app" : ""}`}>
         <aside className="stage-intro">
           <Mascot size={120} className="stage-mascot" />
           <h1>
@@ -243,51 +484,7 @@ export default function App({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
             >
-              {tab === "leads" && (
-                <LeadsScreen leads={leads} test={test} onOpen={setOpenId} onContact={contactLead} />
-              )}
-              {tab === "schedule" && (
-                <ScheduleScreen
-                  events={events}
-                  jobs={jobs}
-                  crews={crews}
-                  contacts={contacts}
-                  leads={leads}
-                  onOpenEvent={setEventId}
-                  onNew={(date) => newBooking(date)}
-                  onScheduleJob={(job) => newBooking(nextWorkday(todayKey()), job)}
-                  onScheduleLead={scheduleLead}
-                />
-              )}
-              {tab === "alerts" && (
-                <AlertsScreen
-                  contacts={contacts}
-                  setContacts={setContacts}
-                  rules={rules}
-                  setRules={setRules}
-                  onTest={sendTestLead}
-                />
-              )}
-              {tab === "website" && <WebsiteScreen onCopy={copy} onTestLead={sendTestLead} />}
-              {tab === "business" && (
-                <BusinessScreen
-                  test={test}
-                  onTestChange={updateTest}
-                  stats={
-                    live
-                      ? {
-                          leads: leads.filter((l) => l.minutesAgo < 7 * 24 * 60).length,
-                          reply: "—",
-                          booked: leads.filter((l) => l.status === "booked").length,
-                        }
-                      : {
-                          leads: leads.length + 8,
-                          reply: "6 min",
-                          booked: leads.filter((l) => l.status === "booked").length + 4,
-                        }
-                  }
-                />
-              )}
+              {screenFor(tab)}
             </motion.main>
           </AnimatePresence>
 
@@ -346,77 +543,7 @@ export default function App({
             )}
           </AnimatePresence>
 
-          <LeadSheet
-            lead={openLead}
-            test={test}
-            onClose={() => setOpenId(null)}
-            onContact={contactLead}
-            onStatus={setStatus}
-            onSchedule={scheduleLead}
-          />
-
-          <EventSheet
-            event={openEvent}
-            job={jobs.find((j) => j.id === openEvent?.jobId)}
-            events={events}
-            crews={crews}
-            contacts={contacts}
-            test={test}
-            onClose={() => setEventId(null)}
-            onMove={(e) => {
-              setEventId(null);
-              setEditing({ draft: { ...e }, job: jobs.find((j) => j.id === e.jobId), mode: "move", original: e });
-            }}
-            onEdit={(e) => {
-              setEventId(null);
-              setEditing({ draft: { ...e }, job: jobs.find((j) => j.id === e.jobId), mode: "edit", original: e });
-            }}
-            onNotify={(e) => {
-              setEventId(null);
-              setNotify({ event: e, moved: false });
-            }}
-            onStatus={setEventStatus}
-          />
-
-          <EditorSheet
-            target={editing}
-            events={events}
-            crews={crews}
-            contacts={contacts}
-            onClose={() => setEditing(null)}
-            onSave={saveEvent}
-          />
-
-          <NotifySheet
-            target={notify}
-            job={jobs.find((j) => j.id === notify?.event.jobId)}
-            crews={crews}
-            contacts={contacts}
-            test={test}
-            onClose={() => setNotify(null)}
-            onSent={(e, how) => {
-              setEvents((es) => es.map((x) => (x.id === e.id ? { ...x, status: "confirmed" } : x)));
-              setNotify(null);
-              showToast(how === "text" ? "Opening Messages…" : "Opening Mail…");
-            }}
-          />
-
-          <div className="toast-wrap" aria-live="polite">
-            <AnimatePresence>
-              {toast && (
-                <motion.div
-                  key={toast}
-                  className="toast"
-                  initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                  transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-                >
-                  <CheckCircle2 size={22} strokeWidth={2.5} /> {toast}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {overlays}
         </div>
       </div>
     </MotionConfig>

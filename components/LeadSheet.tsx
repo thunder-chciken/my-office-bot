@@ -8,29 +8,30 @@ import { Avatar, Segmented, Sheet } from "./ui";
 
 export type ContactMethod = "call" | "text" | "email" | "directions";
 
-export function LeadSheet({
-  lead,
-  test,
-  onClose,
-  onContact,
-  onStatus,
-  onSchedule,
-}: {
-  lead: Lead | null;
+type DetailProps = {
   test: TestTarget;
-  onClose: () => void;
   onContact: (lead: Lead, how: ContactMethod, text?: string) => void;
   onStatus: (lead: Lead, status: LeadStatus) => void;
   onSchedule: (lead: Lead) => void;
-}) {
+};
+
+export function LeadSheet({ lead, onClose, ...props }: DetailProps & { lead: Lead | null; onClose: () => void }) {
+  return (
+    <Sheet open={!!lead} onClose={onClose} title="Lead">
+      {lead && <LeadDetail lead={lead} {...props} />}
+    </Sheet>
+  );
+}
+
+// The full lead: contact buttons, message, quick replies, status and alert history.
+// Shown in a sheet on phones and as the right-hand panel on the desktop dashboard.
+export function LeadDetail({ lead, test, onContact, onStatus, onSchedule }: DetailProps & { lead: Lead }) {
   const apple = useIsApple();
   const account = useAccount();
-  const to = lead ? reach(lead, test) : null;
+  const to = reach(lead, test);
   const testing = !!(test.phone.trim() || test.email.trim());
 
   return (
-    <Sheet open={!!lead} onClose={onClose} title="Lead">
-      {lead && to && (
         <>
           <div className="detail-head">
             <Avatar name={lead.name} size={68} />
@@ -137,7 +138,5 @@ export function LeadSheet({
             ))}
           </ol>
         </>
-      )}
-    </Sheet>
   );
 }

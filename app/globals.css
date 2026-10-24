@@ -2124,6 +2124,415 @@ a.row-btn {
   color: var(--ink-2);
 }
 
+/* ---------- Saving & small additions ---------- */
+
+.toast.is-error {
+  background: #8f1d20;
+}
+
+.toast.is-error svg {
+  color: #ffd2d3;
+}
+
+.chan:disabled {
+  position: relative;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chan-soon {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.soon-card {
+  margin-top: 20px;
+  background: var(--blue-50);
+  border-color: var(--blue-100);
+  box-shadow: none;
+}
+
+.soon-card .card-lead {
+  margin-bottom: 6px;
+}
+
+.profile-btn {
+  width: 100%;
+  border: 1px solid var(--line);
+  text-align: left;
+  transition: transform 120ms ease-out;
+}
+
+.profile-btn:active {
+  transform: scale(0.98);
+}
+
+.profile-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-form {
+  padding-top: 14px;
+}
+
+/* A signed-in app on a tablet held upright: full screen, not the phone frame. */
+@media (min-width: 720px) {
+  .stage.is-app {
+    display: block;
+    padding: 0;
+    background: var(--bg);
+  }
+
+  .stage.is-app .stage-intro,
+  .stage.is-app .status-bar {
+    display: none;
+  }
+
+  .stage.is-app .device {
+    --top: calc(env(safe-area-inset-top) + 16px);
+    width: auto;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .stage.is-app .screen {
+    padding-left: max(20px, calc((100% - 680px) / 2));
+    padding-right: max(20px, calc((100% - 680px) / 2));
+  }
+}
+
+/* ---------- Desktop dashboard (PCs, tablets in landscape) ---------- */
+
+.desk {
+  position: relative;
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+
+.desk-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 22px 14px 18px;
+  background: #fff;
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+.desk-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 22px;
+  text-decoration: none;
+}
+
+.desk-nav {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  flex: 1;
+}
+
+.desk-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 17px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.desk-link:hover {
+  background: var(--bg-soft);
+}
+
+.desk-link.is-active {
+  background: var(--blue-100);
+  color: var(--blue-ink);
+}
+
+.desk-badge {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 7px;
+  border-radius: 12px;
+  background: var(--red);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.desk-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px 10px 8px;
+  border-top: 1px solid var(--line);
+}
+
+.logo-tile.small {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.desk-account-text {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.desk-account-text .muted {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.desk-main {
+  height: 100dvh;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.desk-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 36px 36px 96px;
+}
+
+.desk-split {
+  display: grid;
+  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.desk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding: 30px 20px 0;
+  background: #fff;
+  border-right: 1px solid var(--line);
+}
+
+.desk-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.desk-title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+}
+
+.desk-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--blue-100);
+  color: var(--blue-ink);
+  font-size: 15px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.desk-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-soft);
+  color: var(--ink-3);
+}
+
+.desk-search:focus-within {
+  border-color: var(--blue);
+  background: #fff;
+}
+
+.desk-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 17px;
+  color: var(--ink);
+  outline: none;
+}
+
+.desk-rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 -20px;
+  padding: 0 12px 24px;
+}
+
+.desk-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+
+.desk-row:hover {
+  background: var(--bg-soft);
+}
+
+.desk-row.is-active {
+  background: var(--blue-50);
+  box-shadow: inset 0 0 0 2px var(--blue-200);
+}
+
+.desk-row-text {
+  display: grid;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.desk-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 17px;
+}
+
+.desk-row-top .muted {
+  flex: none;
+  font-size: 14px;
+}
+
+.desk-row .lead-service {
+  font-size: 15px;
+}
+
+.desk-row-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.desk-row-tags .pill {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pill.status-new {
+  background: var(--blue-100);
+  color: var(--blue-ink);
+}
+
+.pill.status-contacted {
+  background: #fff4dc;
+  color: #8a5a00;
+}
+
+.pill.status-booked {
+  background: var(--green-50);
+  color: var(--green);
+}
+
+.desk-detail {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.desk-detail-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 36px 36px 72px;
+}
+
+.desk-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+}
+
+/* Sheets become centered dialogs on the desktop. */
+.desk .scrim {
+  position: fixed;
+}
+
+.desk .sheet {
+  position: fixed;
+  inset: 0;
+  width: min(560px, calc(100vw - 48px));
+  height: fit-content;
+  max-height: calc(100dvh - 64px);
+  margin: auto;
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(11, 26, 46, 0.28);
+}
+
+.desk .sheet-drag {
+  cursor: default;
+}
+
+.desk .grabber {
+  display: none;
+}
+
+.desk .toast-wrap {
+  position: fixed;
+  left: 264px;
+  bottom: 28px;
+}
+
+.desk .screen-header {
+  margin-top: 0;
+}
+
 /* ---------- Accessibility preferences ---------- */
 
 @media (prefers-reduced-motion: reduce) {

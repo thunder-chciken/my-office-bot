@@ -4,6 +4,7 @@ import { useEffect, useId, type ReactNode } from "react";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { X } from "lucide-react";
 import { initials } from "@/lib/data";
+import { useLayout } from "@/lib/account";
 
 export function Mascot({ size, className = "" }: { size: number; className?: string }) {
   return (
@@ -38,9 +39,11 @@ export function Header({
   subtitle?: string;
   action?: ReactNode;
 }) {
+  // On the desktop dashboard the sidebar already shows the brand.
+  const desktop = useLayout() === "desktop";
   return (
     <>
-    <BrandBar />
+    {!desktop && <BrandBar />}
     <header className="screen-header">
       <div>
         <h1 className="large-title">{title}</h1>

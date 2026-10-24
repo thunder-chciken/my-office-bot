@@ -1,14 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronRight, Droplet, Grid3x3, Hammer, Home, LifeBuoy, LogIn, LogOut, UserPlus, Wind, Zap, CreditCard } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  CreditCard,
+  Droplet,
+  Grid3x3,
+  Hammer,
+  Home,
+  LifeBuoy,
+  LogIn,
+  LogOut,
+  Pencil,
+  UserPlus,
+  Wind,
+  Zap,
+} from "lucide-react";
 import { initials } from "@/lib/data";
-import { useAccount } from "@/lib/account";
-import { browserClient } from "@/lib/supabase/client";
+import { useAccount, useLayout, type Account } from "@/lib/account";
 import type { TestTarget } from "@/lib/contact";
-import { Header, SectionTitle } from "./ui";
+import { timezones } from "@/lib/live";
+import { browserClient } from "@/lib/supabase/client";
+import { Header, SectionTitle, Sheet } from "./ui";
 
-const trades = [
+const tradeList = [
   { name: "Roofing", Icon: Home },
   { name: "HVAC", Icon: Wind },
   { name: "Remodeling", Icon: Hammer },
@@ -21,31 +37,47 @@ export function BusinessScreen({
   stats,
   test,
   onTestChange,
+  onSaveProfile,
 }: {
   stats: { leads: number; reply: string; booked: number };
   test: TestTarget;
   onTestChange: (t: TestTarget) => void;
+  onSaveProfile: (next: Account) => Promise<boolean>;
 }) {
   const account = useAccount();
+  const desktop = useLayout() === "desktop";
+  const [editing, setEditing] = useState(false);
+
   const signOut = async () => {
     await browserClient().auth.signOut();
     window.location.href = "/login";
   };
-  const [selected, setSelected] = useState<string[]>(["Roofing", "Remodeling", "Tile"]);
-  const toggle = (t: string) =>
-    setSelected((s) => (s.includes(t) ? s.filter((x) => x !== t) : [...s, t]));
+  const toggleTrade = (t: string) =>
+    void onSaveProfile({
+      ...account,
+      trades: account.trades.includes(t) ? account.trades.filter((x) => x !== t) : [...account.trades, t],
+    });
+  const place = [account.city, timezones.find((z) => z.value === account.timezone)?.label].filter(Boolean).join(" · ");
 
   return (
     <>
       <Header title="Business" />
 
-      <div className="card pad profile">
-        <span className="logo-tile">{initials(account.name)}</span>
-        <div>
-          <p className="card-lead">{account.name}</p>
-          <p className="muted">{account.live ? account.ownerEmail : account.city}</p>
+      {desktop ? (
+        <div className="card pad">
+          <p className="card-lead">Business details</p>
+          <ProfileForm onSave={onSaveProfile} />
         </div>
-      </div>
+      ) : (
+        <button className="card pad profile profile-btn" onClick={() => setEditing(true)}>
+          <span className="logo-tile">{initials(account.name)}</span>
+          <span className="profile-text">
+            <span className="card-lead">{account.name}</span>
+            <span className="muted">{place || account.ownerEmail || "Add your city and time zone"}</span>
+          </span>
+          <Pencil size={20} className="chev" />
+        </button>
+      )}
 
       <SectionTitle>This week</SectionTitle>
       <div className="stat-grid">
@@ -65,10 +97,10 @@ export function BusinessScreen({
 
       <SectionTitle>What you do</SectionTitle>
       <div className="trade-grid">
-        {trades.map(({ name, Icon }) => {
-          const on = selected.includes(name);
+        {tradeList.map(({ name, Icon }) => {
+          const on = account.trades.includes(name);
           return (
-            <button key={name} className="trade" aria-pressed={on} onClick={() => toggle(name)}>
+            <button key={name} className="trade" aria-pressed={on} onClick={() => toggleTrade(name)}>
               {on && (
                 <span className="trade-check">
                   <Check size={14} strokeWidth={3.5} />
@@ -84,8 +116,9 @@ export function BusinessScreen({
       <SectionTitle>Test on your phone</SectionTitle>
       <div className="card pad form">
         <p className="muted">
-          The sample customers have fake numbers. Put yours here and Call, Text and Email on any lead will go to
-          you instead. Saved on this phone only.
+          {account.live
+            ? "Put your own number and email here and Call, Text and Email on any lead will go to you instead. Saved on this device only."
+            : "The sample customers have fake numbers. Put yours here and Call, Text and Email on any lead will go to you instead. Saved on this phone only."}
         </p>
         <label className="field">
           <span>Your mobile number</span>
@@ -127,11 +160,11 @@ export function BusinessScreen({
           </button>
         </li>
         <li>
-          <button className="row row-btn">
+          <a className="row row-btn row-link" href="mailto:support@myofficebot.app">
             <LifeBuoy size={22} className="row-icon" />
             <span className="row-text">Help &amp; support</span>
             <ChevronRight size={22} className="chev" />
-          </button>
+          </a>
         </li>
         {account.live ? (
           <li>
@@ -159,6 +192,69 @@ export function BusinessScreen({
           </>
         )}
       </ul>
+
+      <Sheet open={editing} onClose={() => setEditing(false)} title="Business details">
+        {editing && (
+          <ProfileForm
+            onSave={async (next) => {
+              const ok = await onSaveProfile(next);
+              if (ok) setEditing(false);
+              return ok;
+            }}
+          />
+        )}
+      </Sheet>
     </>
+  );
+}
+
+// Business name, phone, city, time zone and website. Inline on desktop, in a sheet on phones.
+export function ProfileForm({ onSave }: { onSave: (next: Account) => Promise<boolean> }) {
+  const account = useAccount();
+  const [draft, setDraft] = useState(account);
+  const [busy, setBusy] = useState(false);
+  const set = (patch: Partial<Account>) => setDraft((d) => ({ ...d, ...patch }));
+  const changed = (["name", "phone", "city", "timezone", "website"] as const).some((k) => draft[k] !== account[k]);
+
+  const save = async () => {
+    setBusy(true);
+    await onSave({ ...account, name: draft.name.trim(), phone: draft.phone.trim(), city: draft.city.trim(), timezone: draft.timezone, website: draft.website.trim() });
+    setBusy(false);
+  };
+
+  return (
+    <div className="form profile-form">
+      <label className="field">
+        <span>Business name</span>
+        <input value={draft.name} onChange={(e) => set({ name: e.target.value })} autoComplete="organization" />
+      </label>
+      <div className="field-row">
+        <label className="field">
+          <span>Business phone</span>
+          <input value={draft.phone} onChange={(e) => set({ phone: e.target.value })} inputMode="tel" placeholder="(512) 555-0100" />
+        </label>
+        <label className="field">
+          <span>City</span>
+          <input value={draft.city} onChange={(e) => set({ city: e.target.value })} placeholder="Austin, TX" />
+        </label>
+      </div>
+      <label className="field">
+        <span>Website</span>
+        <input value={draft.website} onChange={(e) => set({ website: e.target.value })} inputMode="url" placeholder="yourcompany.com" />
+      </label>
+      <div className="field">
+        <span>Time zone</span>
+        <div className="chip-row">
+          {timezones.map((z) => (
+            <button key={z.value} className="chip" aria-pressed={draft.timezone === z.value} onClick={() => set({ timezone: z.value })}>
+              {z.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button className="btn btn-primary btn-block" disabled={!changed || !draft.name.trim() || busy} onClick={save}>
+        {busy ? "Saving…" : changed ? "Save changes" : "Saved"}
+      </button>
+    </div>
   );
 }
