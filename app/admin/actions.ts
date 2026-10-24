@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { audit, requireAdmin } from "@/lib/server/admin";
 import { adminDb } from "@/lib/server/db";
+import { sendDailyDigests } from "@/lib/server/digest";
 
 // Admin actions (D52). Each one re-checks that the caller is an admin, and the destructive ones
 // re-check the typed confirmation on the server, so a stray click or a forged request can't delete anything.
@@ -36,6 +37,23 @@ export async function deleteBusiness(accountId: string, typedName: string): Prom
   await audit(actor, "delete_business", account.name, { account_id: accountId });
   revalidatePath("/admin");
   return {};
+}
+
+// Sends tomorrow's crew emails right away (the same run the evening cron does). Safe to repeat.
+export async function sendCrewEmailsNow(): Promise<Result & { summary?: string }> {
+  const actor = await requireAdmin();
+  try {
+    const r = await sendDailyDigests();
+    await audit(actor, "send_crew_emails", r.date ?? "tomorrow", r);
+    const summary =
+      r.people === 0
+        ? "Nobody has anything booked tomorrow, so no emails went out."
+        : `Tomorrow's schedule: ${r.sent} sent, ${r.skipped} already sent earlier${r.failed ? `, ${r.failed} failed` : ""}.`;
+    revalidatePath("/admin");
+    return { summary };
+  } catch {
+    return { error: "Couldn't send the crew emails. Nothing was sent twice." };
+  }
 }
 
 export async function deletePerson(userId: string, typedEmail: string, alsoBusinesses: boolean): Promise<Result> {

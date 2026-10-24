@@ -1,3 +1,5 @@
+import { cardFileName, vcard } from "@/lib/vcard";
+
 // Sends email through Resend's HTTP API (no SDK needed).
 
 export type SendResult = { ok: true; id: string } | { ok: false; error: string; retryable: boolean };
@@ -9,6 +11,7 @@ export async function sendEmail(opts: {
   text: string;
   replyTo?: string;
   idempotencyKey: string;
+  attachments?: { filename: string; content: string; contentType?: string }[];
 }): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY;
   if (!key) return { ok: false, error: "RESEND_API_KEY is not set", retryable: false };
@@ -30,6 +33,15 @@ export async function sendEmail(opts: {
         html: opts.html,
         text: opts.text,
         ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+        ...(opts.attachments?.length
+          ? {
+              attachments: opts.attachments.map((a) => ({
+                filename: a.filename,
+                content: a.content,
+                ...(a.contentType ? { content_type: a.contentType } : {}),
+              })),
+            }
+          : {}),
       }),
     });
     const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
@@ -61,6 +73,8 @@ export function leadAlertEmail(lead: {
   siteDomain: string;
   receivedAt: Date;
   timezone: string;
+  /** Signed "Save contact" link (D55); the same card is also attached to the email. */
+  cardUrl?: string;
 }) {
   const who = lead.name || "Someone";
   const first = who.split(" ")[0];
@@ -84,6 +98,7 @@ export function leadAlertEmail(lead: {
     lead.phone ? button(`tel:${e164(lead.phone)}`, `Call ${first}`, true) : "",
     lead.phone ? button(`sms:${e164(lead.phone)}`, `Text ${first}`, false) : "",
     lead.email ? button(`mailto:${lead.email}`, `Email ${first}`, false) : "",
+    lead.cardUrl && (lead.phone || lead.email) ? button(lead.cardUrl, "Save contact", false) : "",
   ].join("");
 
   const row = (label: string, value: string, href?: string) =>
@@ -106,6 +121,7 @@ export function leadAlertEmail(lead: {
     ${row("Email", lead.email, lead.email ? `mailto:${lead.email}` : undefined)}
     ${row("Address", lead.address, lead.address ? `https://maps.google.com/?q=${encodeURIComponent(lead.address)}` : undefined)}
   </table>
+  ${lead.phone || lead.email ? `<p style="margin:0 0 14px;font:15px Arial,sans-serif;color:#44546B">To save ${esc(first)} to your phone, tap <b>Save contact</b> or the contact card attached to this email.</p>` : ""}
   <p style="margin:0;font:14px Arial,sans-serif;color:#7D8A9C">Received ${esc(when)} from ${esc(lead.siteDomain)} · My Office Bot</p>
 </td></tr></table></body></html>`;
 
@@ -115,10 +131,25 @@ export function leadAlertEmail(lead: {
     lead.phone ? `Phone: ${lead.phone}` : "",
     lead.email ? `Email: ${lead.email}` : "",
     lead.address ? `Address: ${lead.address}` : "",
+    lead.cardUrl && (lead.phone || lead.email) ? `\nSave ${first} to your phone: ${lead.cardUrl} (or open the attached contact card)` : "",
     `\nReceived ${when} from ${lead.siteDomain}`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  return { subject, html, text };
+  // The contact card rides along as an attachment: tapping it opens "Add to Contacts" on iPhone and Android.
+  const attachments =
+    lead.phone || lead.email
+      ? [
+          {
+            filename: cardFileName(who),
+            content: Buffer.from(
+              vcard({ name: who, phone: lead.phone, email: lead.email, address: lead.address, note: service }),
+            ).toString("base64"),
+            contentType: "text/vcard",
+          },
+        ]
+      : [];
+
+  return { subject, html, text, attachments };
 }

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { adminDb } from "./db";
+import { cardToken } from "./cardLink";
 import { leadAlertEmail, sendEmail } from "./email";
 import { countLinks, emergencyWords, isValidEmail, normalizeLead, phoneDigits } from "./normalize";
 
@@ -134,6 +135,7 @@ export async function handleFormSubmission(
     siteDomain: site.domain,
     receivedAt: new Date(lead.received_at),
     timezone,
+    cardUrl: `${process.env.PUBLIC_BASE_URL ?? "https://myofficebot.app"}/api/v1/vcard?t=${encodeURIComponent(cardToken("lead", lead.id))}`,
   });
 
   let sent = 0;

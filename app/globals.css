@@ -2881,6 +2881,10 @@ a.row-btn {
   margin-top: 12px;
 }
 
+.save-contact-error {
+  margin-top: 8px;
+}
+
 .action-tile.is-disabled {
   pointer-events: none;
   opacity: 0.45;

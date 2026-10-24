@@ -15,7 +15,16 @@ import {
   type LeadStatus,
 } from "@/lib/data";
 import { AccountProvider, LayoutProvider, demoAccount, type Account } from "@/lib/account";
-import { deleteCustomer, removeContact, saveBusiness, saveContact, saveCustomer, saveLeadStatus } from "@/lib/live";
+import {
+  deleteCustomer,
+  removeContact,
+  saveBooking,
+  saveBusiness,
+  saveContact,
+  saveCustomer,
+  saveEventStatus,
+  saveLeadStatus,
+} from "@/lib/live";
 import { attachLead, blankCustomer, customersFromLeads, type Customer } from "@/lib/customers";
 import { useWide } from "@/lib/useWide";
 import { loadTestTarget, saveTestTarget, type TestTarget } from "@/lib/contact";
@@ -27,6 +36,7 @@ import {
   seedCrews,
   seedSchedule,
   todayKey,
+  type Crew,
   type Job,
   type ScheduleEvent,
 } from "@/lib/schedule";
@@ -66,12 +76,14 @@ export default function App({
   initialLeads,
   initialContacts,
   initialCustomers,
+  initialSchedule,
   variant = "showcase",
 }: {
   account?: Account;
   initialLeads?: Lead[];
   initialContacts?: Contact[];
   initialCustomers?: Customer[];
+  initialSchedule?: { events: ScheduleEvent[]; jobs: Job[]; crews: Crew[] };
   // "showcase": the public demo at / (always the phone frame). "app": a real dashboard that
   // switches to the desktop layout on wide screens.
   variant?: "showcase" | "app";
@@ -94,9 +106,9 @@ export default function App({
   const testIndex = useRef(0);
   const [test, setTest] = useState<TestTarget>({ phone: "", email: "" });
   // Signed-in accounts start with an empty calendar; saving it to the database comes next.
-  const [crews] = useState(live ? [] : seedCrews);
-  const [jobs, setJobs] = useState<Job[]>(() => (live ? [] : seedSchedule().jobs));
-  const [events, setEvents] = useState<ScheduleEvent[]>(() => (live ? [] : seedSchedule().events));
+  const [crews] = useState<Crew[]>(() => initialSchedule?.crews ?? (live ? [] : seedCrews));
+  const [jobs, setJobs] = useState<Job[]>(() => initialSchedule?.jobs ?? (live ? [] : seedSchedule().jobs));
+  const [events, setEvents] = useState<ScheduleEvent[]>(() => initialSchedule?.events ?? (live ? [] : seedSchedule().events));
   const [eventId, setEventId] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [notify, setNotify] = useState<{ event: ScheduleEvent; moved: boolean } | null>(null);
@@ -243,9 +255,23 @@ export default function App({
     newBooking(nextWorkday(todayKey()), jobs.find((j) => j.leadId === lead.id) ?? jobFromLead(lead));
   };
 
-  const saveEvent = (draft: ScheduleEvent, job: Job | undefined, mode: EditTarget["mode"]) => {
-    if (job) setJobs((js) => (js.some((j) => j.id === job.id) ? js : [...js, job]));
-    setEvents((es) => (es.some((e) => e.id === draft.id) ? es.map((e) => (e.id === draft.id ? draft : e)) : [...es, draft]));
+  const saveEvent = async (input: ScheduleEvent, inputJob: Job | undefined, mode: EditTarget["mode"]) => {
+    let draft = input;
+    let job = inputJob;
+    if (live) {
+      // Save first; the database assigns the real ids and has the final say on double-booking.
+      const newJob = job && !jobs.some((j) => j.id === job!.id) ? job : undefined;
+      const { eventId, jobId, error } = await saveBooking(draft, newJob);
+      if (error || !eventId) return showToast(error ?? "Couldn't save. Try again.", true);
+      if (newJob && jobId) job = { ...newJob, id: jobId };
+      draft = { ...draft, id: eventId, jobId: job?.id ?? draft.jobId };
+    }
+    const saved = draft;
+    if (job) {
+      const j = job;
+      setJobs((js) => (js.some((x) => x.id === j.id) ? js : [...js, j]));
+    }
+    setEvents((es) => (es.some((e) => e.id === saved.id) ? es.map((e) => (e.id === saved.id ? saved : e)) : [...es, saved]));
     if (job?.leadId && mode === "new") {
       void persistStatus(job.leadId, "booked");
       patchLead(job.leadId, (l) => ({
@@ -260,7 +286,11 @@ export default function App({
     else setNotify({ event: draft, moved: mode === "move" });
   };
 
-  const setEventStatus = (e: ScheduleEvent, status: ScheduleEvent["status"]) => {
+  const setEventStatus = async (e: ScheduleEvent, status: ScheduleEvent["status"]) => {
+    if (live) {
+      const { error } = await saveEventStatus(e.id, status);
+      if (error) return showToast(error, true);
+    }
     setEvents((es) => es.map((x) => (x.id === e.id ? { ...x, status } : x)));
     if (status === "canceled") {
       setEventId(null);
@@ -444,6 +474,7 @@ export default function App({
         onClose={() => setNotify(null)}
         onSent={(e, how) => {
           setEvents((es) => es.map((x) => (x.id === e.id ? { ...x, status: "confirmed" } : x)));
+          if (live) void saveEventStatus(e.id, "confirmed");
           setNotify(null);
           showToast(how === "text" ? "Opening Messages…" : "Opening Mail…");
         }}

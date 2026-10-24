@@ -235,7 +235,7 @@ export function EditorSheet({
   crews: Crew[];
   contacts: Contact[];
   onClose: () => void;
-  onSave: (draft: ScheduleEvent, job: Job | undefined, mode: EditTarget["mode"]) => void;
+  onSave: (draft: ScheduleEvent, job: Job | undefined, mode: EditTarget["mode"]) => void | Promise<void>;
 }) {
   const title = !target
     ? ""
@@ -276,9 +276,10 @@ function Editor({
   events: ScheduleEvent[];
   crews: Crew[];
   contacts: Contact[];
-  onSave: (draft: ScheduleEvent, job: Job | undefined, mode: EditTarget["mode"]) => void;
+  onSave: (draft: ScheduleEvent, job: Job | undefined, mode: EditTarget["mode"]) => void | Promise<void>;
 }) {
   const { mode, original } = target;
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState(target.draft);
   const [job, setJob] = useState<Job | undefined>(
     target.job ?? (mode === "new" && target.draft.type !== "unavailable" ? blankJob() : undefined),
@@ -307,12 +308,18 @@ function Editor({
   const toggleIn = (key: "crewIds" | "personIds", id: string) =>
     set({ [key]: draft[key].includes(id) ? draft[key].filter((x) => x !== id) : [...draft[key], id] });
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     const title = draft.type === "appointment" && draft.kind ? kindLabel[draft.kind] : draft.title.trim() || "Time off";
     const kept = draft.type === "unavailable" ? undefined : job;
     const finalJob = kept && needsCustomer ? { ...kept, title: kept.title || title } : kept;
     const overrideReason = conflicts.length ? reason.trim() : draft.overrideReason;
-    onSave({ ...draft, title, jobId: finalJob?.id, overrideReason }, finalJob, mode);
+    setSaving(true);
+    try {
+      await onSave({ ...draft, title, jobId: finalJob?.id, overrideReason }, finalJob, mode);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const length = draft.to - draft.from;
@@ -540,8 +547,8 @@ function Editor({
       )}
       {draft.type !== "unavailable" && nobody && <p className="muted">Nobody assigned yet. You can add someone later.</p>}
 
-      <button className="btn btn-primary btn-block btn-xl" disabled={!valid} onClick={save}>
-        {conflicts.length > 0 ? "Book anyway" : mode === "move" ? "Move it" : mode === "edit" ? "Save" : "Book it"}
+      <button className="btn btn-primary btn-block btn-xl" disabled={!valid || saving} onClick={save}>
+        {saving ? "Saving…" : conflicts.length > 0 ? "Book anyway" : mode === "move" ? "Move it" : mode === "edit" ? "Save" : "Book it"}
       </button>
     </div>
   );

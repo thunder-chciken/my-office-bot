@@ -109,3 +109,15 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | # | Decision | Why |
 | --- | --- | --- |
 | D53 | **Every real lead becomes a customer**, matched within the business by phone (last 10 digits) or email, so repeat customers don't duplicate (0007). Contractors can add, edit, note and delete customers (deleting keeps their leads). New tab **Customers** (phone tab bar: Leads, Schedule, Customers, Alerts, Business; Website moved inside Business). **Save to phone contacts** on every lead and customer downloads a vCard from `/api/v1/vcard?lead=` or `?customer=` (ids only in the URL; read under Row Level Security). Spam and quarantined leads don't create customers. | Matt wants contractors to keep a customer list and get homeowners into their phone contacts so calls show by name. |
+
+## Schedule saving and crew emails (2026-10-24)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D54 | **The schedule saves through `save_booking` / `set_event_status` and loads through `my_schedule`** (0008). The app keeps "day + minutes"; the database turns that into real timestamps in the business's time zone and back, and creates the job in the same call when booking from a lead. The 0003 double-booking rule still runs at commit; who's-going is only rewritten when it changes, so a rain move isn't blocked by clashes already accepted. **Evening-before crew email:** Vercel Cron hits `/api/cron/daily-digest` daily at 23:00 UTC (≈5–6pm Central; Hobby crons may run any time in that hour), protected by `CRON_SECRET`. Everyone booked tomorrow (people assigned directly or through a crew, with an email) gets one email of their stops; `schedule_notifications` + Resend idempotency keys mean a re-run never double-sends. Paused businesses are skipped. Admin has "Send tomorrow's crew emails now". | Matt wants bookings to stick and crews to know tomorrow's plan without opening the app. |
+
+## Save to phone contacts, fixed (2026-10-24)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D55 | **Contact cards use signed links**, not the sign-in cookie: the app asks the server (which checks the person can see the lead/customer) for `/api/v1/vcard?t=kind.id.expiry.signature`, valid 30 days, signed with a key derived from the Supabase secret. The card is served `inline` and opened in place, so iPhone shows "Create New Contact" and Android offers Contacts. **Every lead alert email now has a "Save contact" button and the .vcf attached.** Install icons in the manifest gained `?v=2` so installed Android apps refresh to the mascot; iPhones need the app removed and re-added. | Matt found Save contact didn't work from the installed app: phones open cards in a separate browser window without the app's sign-in. Attaching the card to the alert email lets him save a homeowner straight from the inbox. |

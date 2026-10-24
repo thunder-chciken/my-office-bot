@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Building2, History, PauseCircle, PlayCircle, Search, Trash2, Users } from "lucide-react";
+import { AlertTriangle, Building2, History, Mail, PauseCircle, PlayCircle, Search, Trash2, Users } from "lucide-react";
 import type { AdminBusiness, AdminData, AdminPerson } from "@/lib/server/admin";
-import { deleteBusiness, deletePerson, setBusinessPaused } from "@/app/admin/actions";
+import { deleteBusiness, deletePerson, sendCrewEmailsNow, setBusinessPaused } from "@/app/admin/actions";
 import { browserClient } from "@/lib/supabase/client";
 import { Mascot, Segmented } from "../ui";
 
@@ -54,6 +54,20 @@ export function AdminConsole({ data, meId, meEmail }: { data: AdminData; meId: s
           </span>
         </a>
         <div className="admin-me">
+          <button
+            className="btn btn-soft admin-small"
+            disabled={pending}
+            title="Emails everyone booked tomorrow their schedule now, instead of waiting for the evening run"
+            onClick={() =>
+              start(async () => {
+                const { error, summary } = await sendCrewEmailsNow();
+                setNotice(error ? { text: error, error: true } : { text: summary ?? "Done." });
+                router.refresh();
+              })
+            }
+          >
+            <Mail size={18} /> Send tomorrow&apos;s crew emails now
+          </button>
           <span className="muted">{meEmail}</span>
           <button
             className="btn btn-soft admin-small"
