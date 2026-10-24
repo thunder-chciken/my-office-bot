@@ -5,6 +5,7 @@ import { firstName, quickReplies, statusLabel, timeAgo, type Lead, type LeadStat
 import { useAccount } from "@/lib/account";
 import { mailHref, mapsHref, reach, smsHref, telHref, useIsApple, type TestTarget } from "@/lib/contact";
 import { Avatar, Segmented, Sheet } from "./ui";
+import { SaveContactButton } from "./SaveContact";
 
 export type ContactMethod = "call" | "text" | "email" | "directions";
 
@@ -70,6 +71,13 @@ export function LeadDetail({ lead, test, onContact, onStatus, onSchedule }: Deta
               <Navigation size={28} strokeWidth={2.4} /> Directions
             </a>
           </div>
+
+          <SaveContactButton
+            kind="lead"
+            id={lead.id}
+            person={{ name: lead.name, phone: lead.phone, email: lead.email, address: lead.address, note: lead.service }}
+            className="btn btn-soft btn-block save-contact"
+          />
 
           <div className="bubble">
             <p className="bubble-label">Their message</p>

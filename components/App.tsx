@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { AlertCircle, BellRing, Building2, CalendarDays, CheckCircle2, Globe, Inbox, Users } from "lucide-react";
+import { AlertCircle, BellRing, Building2, CalendarDays, CheckCircle2, Contact2, Globe, Inbox, Users } from "lucide-react";
 import {
   firstName,
   seedContacts,
@@ -15,7 +15,8 @@ import {
   type LeadStatus,
 } from "@/lib/data";
 import { AccountProvider, LayoutProvider, demoAccount, type Account } from "@/lib/account";
-import { removeContact, saveBusiness, saveContact, saveLeadStatus } from "@/lib/live";
+import { deleteCustomer, removeContact, saveBusiness, saveContact, saveCustomer, saveLeadStatus } from "@/lib/live";
+import { attachLead, blankCustomer, customersFromLeads, type Customer } from "@/lib/customers";
 import { useWide } from "@/lib/useWide";
 import { loadTestTarget, saveTestTarget, type TestTarget } from "@/lib/contact";
 import {
@@ -37,14 +38,16 @@ import { BusinessScreen } from "./BusinessScreen";
 import { ScheduleScreen } from "./ScheduleScreen";
 import { EditorSheet, EventSheet, NotifySheet, type EditTarget } from "./ScheduleSheets";
 import { DeskPage, DesktopShell, LeadsDesk } from "./Desktop";
+import { CustomerEditSheet, CustomerSheet, CustomersScreen } from "./CustomersScreen";
 import { Mascot } from "./ui";
 
-type Tab = "leads" | "schedule" | "alerts" | "website" | "business";
+type Tab = "leads" | "schedule" | "customers" | "alerts" | "website" | "business";
 
 // Wider labels for the desktop sidebar.
 const deskTabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
   { id: "leads", label: "Leads", Icon: Inbox },
   { id: "schedule", label: "Schedule", Icon: CalendarDays },
+  { id: "customers", label: "Customers", Icon: Contact2 },
   { id: "alerts", label: "Team & alerts", Icon: Users },
   { id: "website", label: "Website & forms", Icon: Globe },
   { id: "business", label: "Business profile", Icon: Building2 },
@@ -53,8 +56,8 @@ const deskTabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
 const tabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
   { id: "leads", label: "Leads", Icon: Inbox },
   { id: "schedule", label: "Schedule", Icon: CalendarDays },
+  { id: "customers", label: "Customers", Icon: Contact2 },
   { id: "alerts", label: "Alerts", Icon: BellRing },
-  { id: "website", label: "Website", Icon: Globe },
   { id: "business", label: "Business", Icon: Building2 },
 ];
 
@@ -62,11 +65,13 @@ export default function App({
   account: initialAccount = demoAccount,
   initialLeads,
   initialContacts,
+  initialCustomers,
   variant = "showcase",
 }: {
   account?: Account;
   initialLeads?: Lead[];
   initialContacts?: Contact[];
+  initialCustomers?: Customer[];
   // "showcase": the public demo at / (always the phone frame). "app": a real dashboard that
   // switches to the desktop layout on wide screens.
   variant?: "showcase" | "app";
@@ -78,6 +83,9 @@ export default function App({
   const [leads, setLeads] = useState(initialLeads ?? seedLeads);
   const [contacts, setContacts] = useState(initialContacts ?? seedContacts);
   const [rules, setRules] = useState(seedRules);
+  const [customers, setCustomers] = useState<Customer[]>(() => initialCustomers ?? customersFromLeads(seedLeads));
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customerDraft, setCustomerDraft] = useState<Customer | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
   const [banner, setBanner] = useState<Lead | null>(null);
@@ -98,6 +106,35 @@ export default function App({
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
+
+  // ---- customers (D53)
+
+  const saveCustomerRecord = async (c: Customer) => {
+    let saved = c;
+    if (live) {
+      const { id, error } = await saveCustomer(c);
+      if (error || !id) {
+        showToast(error ?? "Couldn't save", true);
+        return false;
+      }
+      saved = { ...c, id };
+    } else if (!c.id) saved = { ...c, id: `cu-${Date.now()}` };
+    setCustomers((cs) => (cs.some((x) => x.id === saved.id) ? cs.map((x) => (x.id === saved.id ? saved : x)) : [saved, ...cs]));
+    setCustomerDraft(null);
+    setCustomerId(saved.id);
+    showToast(c.id ? "Saved" : `${saved.name} added`);
+    return true;
+  };
+
+  const removeCustomerRecord = async (c: Customer) => {
+    if (live) {
+      const { error } = await deleteCustomer(c.id);
+      if (error) return showToast(error, true);
+    }
+    setCustomers((cs) => cs.filter((x) => x.id !== c.id));
+    setCustomerId(null);
+    showToast(`${c.name} deleted`);
+  };
 
   const updateTest = (t: TestTarget) => {
     setTest(t);
@@ -255,6 +292,7 @@ export default function App({
       }),
     };
     setLeads((ls) => [lead, ...ls]);
+    setCustomers((cs) => attachLead(cs, lead));
     clearTimeout(bannerTimer.current);
     setBanner(lead);
     bannerTimer.current = setTimeout(() => setBanner(null), 6000);
@@ -303,6 +341,8 @@ export default function App({
             onTest={sendTestLead}
           />
         );
+      case "customers":
+        return <CustomersScreen customers={customers} leads={leads} onOpen={setCustomerId} onAdd={() => setCustomerDraft(blankCustomer())} />;
       case "website":
         return <WebsiteScreen onCopy={copy} onTestLead={sendTestLead} />;
       case "business":
@@ -311,6 +351,7 @@ export default function App({
             test={test}
             onTestChange={updateTest}
             onSaveProfile={saveProfile}
+            onOpenWebsite={() => setTab("website")}
             stats={
               live
                 ? {
@@ -374,6 +415,25 @@ export default function App({
         onClose={() => setEditing(null)}
         onSave={saveEvent}
       />
+
+      <CustomerSheet
+        customer={customers.find((c) => c.id === customerId) ?? null}
+        leads={leads}
+        test={test}
+        onClose={() => setCustomerId(null)}
+        onEdit={(c) => {
+          setCustomerId(null);
+          setCustomerDraft(c);
+        }}
+        onDelete={removeCustomerRecord}
+        onOpenLead={(id) => {
+          setCustomerId(null);
+          setTab("leads");
+          setOpenId(id);
+        }}
+      />
+
+      <CustomerEditSheet customer={customerDraft} onClose={() => setCustomerDraft(null)} onSave={saveCustomerRecord} />
 
       <NotifySheet
         target={notify}
@@ -492,7 +552,7 @@ export default function App({
             {tabs.map(({ id, label, Icon }) => (
               <button
                 key={id}
-                className={`tab${tab === id ? " is-active" : ""}`}
+                className={`tab${tab === id || (id === "business" && tab === "website") ? " is-active" : ""}`}
                 aria-current={tab === id ? "page" : undefined}
                 onClick={() => setTab(id)}
               >

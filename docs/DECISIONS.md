@@ -97,3 +97,15 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | # | Decision | Why |
 | --- | --- | --- |
 | D51 | **One app, two layouts.** Signed-in `/app` (and the sample-data `/demo`) switch to a dashboard on screens 1024px and wider: sidebar (Leads, Schedule, Team & alerts, Website & forms, Business profile), two-pane Leads, sheets shown as centered dialogs. Upright tablets get the phone layout full-screen; the public demo at `/` keeps the phone frame. **Saves go through database functions** (0005): `update_my_business`, `save_contact`, `remove_contact` (owner/admin only; at least one person must keep getting alerts) and `set_lead_status` (anyone on the account). Business profile adds phone, city and trades to `accounts`. In real accounts only email alerts can be switched on; texts and calls show "Soon". Schedule saving is still to come. | Matt wants clients to set up their profile on a PC or tablet. Routing every write through checked functions keeps people inside their own account without opening table-level write access. |
+
+## Platform admin (2026-10-23)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D52 | **`/admin` for Matt only.** Admins are listed in `private.platform_admins` (granted in the SQL editor, never in code); everyone else gets a 404. Shows all businesses and people, lead counts, failed alert emails and an admin log. Actions: **pause/resume** a business (its forms answer "paused" and its app shows a paused screen), **delete a business** (cascades to its leads, team, form and schedule), **delete a person** (their sign-in, plus businesses only they use if ticked). Deletes need the exact name/email typed, re-checked on the server, and every action is written to `admin_audit`. Admins can't delete themselves. Uses the server-only secret key after the admin check. | Matt needs back-office control (removing users, stopping abuse) without opening the Supabase dashboard. |
+
+## Customers (2026-10-23)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D53 | **Every real lead becomes a customer**, matched within the business by phone (last 10 digits) or email, so repeat customers don't duplicate (0007). Contractors can add, edit, note and delete customers (deleting keeps their leads). New tab **Customers** (phone tab bar: Leads, Schedule, Customers, Alerts, Business; Website moved inside Business). **Save to phone contacts** on every lead and customer downloads a vCard from `/api/v1/vcard?lead=` or `?customer=` (ids only in the URL; read under Row Level Security). Spam and quarantined leads don't create customers. | Matt wants contractors to keep a customer list and get homeowners into their phone contacts so calls show by name. |

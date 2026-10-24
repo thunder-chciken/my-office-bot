@@ -23,11 +23,17 @@ export async function handleFormSubmission(
 
   const { data: site, error: siteErr } = await db
     .from("sites")
-    .select("id, account_id, domain, accounts(timezone)")
+    .select("id, account_id, domain, accounts(timezone, billing_status)")
     .eq("public_key", siteKey)
     .maybeSingle();
   if (siteErr) throw siteErr;
   if (!site) return { status: 404, body: { ok: false, error: "Unknown form key" } };
+
+  // An admin can pause an account (D52): its forms stop taking leads until it's turned back on.
+  const acct = site.accounts as unknown as { billing_status: string } | { billing_status: string }[] | null;
+  if ((Array.isArray(acct) ? acct[0] : acct)?.billing_status === "suspended") {
+    return { status: 403, body: { ok: false, error: "This form is paused. Please call us instead." } };
+  }
 
   const fields = normalizeLead(raw);
   if (!fields.phone && !fields.email) {
@@ -105,6 +111,10 @@ export async function handleFormSubmission(
   await db.from("sites").update({ last_lead_at: new Date().toISOString() }).eq("id", site.id);
 
   if (riskStatus !== "ok") return { status: 202, body: { ok: true, lead_id: lead.id, duplicate: false, alerts_sent: 0 } };
+
+  // Save the homeowner as a customer (matched by phone or email, D53). Never blocks the alert.
+  const { error: custErr } = await db.rpc("link_lead_customer", { p_lead: lead.id });
+  if (custErr) console.error("customer link failed", custErr);
 
   // ---- step 0: email every contact who wants email alerts (D37: dispatched right at intake)
   const { data: contacts, error: cErr } = await db

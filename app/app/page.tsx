@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import App from "@/components/App";
+import { AuthShell } from "@/components/auth/AuthForms";
 import type { Account } from "@/lib/account";
+import type { Customer } from "@/lib/customers";
 import type { AlertEvent, Contact, Lead, LeadStatus } from "@/lib/data";
 import { serverClient } from "@/lib/supabase/server";
 
@@ -36,13 +38,13 @@ export default async function AppPage() {
 
   const { data: membership } = await supabase
     .from("memberships")
-    .select("account_id, accounts(name, phone, city, timezone, trades)")
+    .select("account_id, accounts(name, phone, city, timezone, trades, billing_status)")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!membership) redirect("/onboarding");
   const accountId = membership.account_id as string;
 
-  const [{ data: leadRows }, { data: contactRows }, { data: site }] = await Promise.all([
+  const [{ data: leadRows }, { data: contactRows }, { data: site }, { data: customerRows }] = await Promise.all([
     supabase
       .from("leads")
       .select("id, name, phone, email, service, message, address, urgency, state, received_at, lead_events(type, data, created_at)")
@@ -57,6 +59,12 @@ export default async function AppPage() {
       .is("removed_at", null)
       .order("created_at"),
     supabase.from("sites").select("domain, public_key").eq("account_id", accountId).order("created_at").limit(1).maybeSingle(),
+    supabase
+      .from("customers")
+      .select("id, name, phone, email, address, notes, source, created_at, leads(id)")
+      .eq("account_id", accountId)
+      .order("name")
+      .limit(5000),
   ]);
 
   const now = Date.now();
@@ -93,9 +101,42 @@ export default async function AppPage() {
       }),
   }));
 
-  type AccountRow = { name: string; phone: string | null; city: string | null; timezone: string; trades: string[] };
+  type AccountRow = { name: string; phone: string | null; city: string | null; timezone: string; trades: string[]; billing_status: string };
+  type CustomerRow = {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    notes: string | null;
+    source: "lead" | "manual";
+    created_at: string;
+    leads: { id: string }[];
+  };
+  const customers: Customer[] = ((customerRows ?? []) as CustomerRow[]).map((c) => ({
+    id: c.id,
+    name: c.name || "Website visitor",
+    phone: c.phone ?? "",
+    email: c.email ?? "",
+    address: c.address ?? "",
+    notes: c.notes ?? "",
+    source: c.source,
+    createdMinutesAgo: minutesAgo(c.created_at),
+    leadIds: c.leads.map((l) => l.id),
+  }));
+
   const accounts = membership.accounts as unknown as AccountRow | AccountRow[] | null;
   const row = Array.isArray(accounts) ? accounts[0] : accounts;
+  if (row?.billing_status === "suspended") {
+    return (
+      <AuthShell title="Account paused" subtitle="This account is paused, so your forms aren't taking new leads right now.">
+        <p className="muted">
+          Questions? Email <a href="mailto:support@myofficebot.app">support@myofficebot.app</a>.
+        </p>
+      </AuthShell>
+    );
+  }
+
   const meta = user.user_metadata ?? {};
   const owner = contacts[0];
   const account: Account = {
@@ -111,5 +152,5 @@ export default async function AppPage() {
     siteKey: site?.public_key ?? null,
   };
 
-  return <App account={account} initialLeads={leads} initialContacts={contacts} variant="app" />;
+  return <App account={account} initialLeads={leads} initialContacts={contacts} initialCustomers={customers} variant="app" />;
 }

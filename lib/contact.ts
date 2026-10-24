@@ -2,17 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { firstName, type Lead } from "./data";
+import { toE164 } from "./phone";
 
 // Builds the links that hand off to the phone's own Phone, Messages, Mail and Maps apps.
 
 export type TestTarget = { phone: string; email: string };
 
-export function toE164(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length === 10) return `+1${digits}`;
-  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
-  return digits ? `+${digits}` : "";
-}
+export { toE164 };
 
 export const telHref = (phone: string) => `tel:${toE164(phone)}`;
 

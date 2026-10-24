@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CreditCard,
   Droplet,
+  Globe,
   Grid3x3,
   Hammer,
   Home,
@@ -38,11 +39,13 @@ export function BusinessScreen({
   test,
   onTestChange,
   onSaveProfile,
+  onOpenWebsite,
 }: {
   stats: { leads: number; reply: string; booked: number };
   test: TestTarget;
   onTestChange: (t: TestTarget) => void;
   onSaveProfile: (next: Account) => Promise<boolean>;
+  onOpenWebsite: () => void;
 }) {
   const account = useAccount();
   const desktop = useLayout() === "desktop";
@@ -77,6 +80,21 @@ export function BusinessScreen({
           </span>
           <Pencil size={20} className="chev" />
         </button>
+      )}
+
+      {!desktop && (
+        <ul className="card list website-link">
+          <li>
+            <button className="row row-btn" onClick={onOpenWebsite}>
+              <Globe size={22} className="row-icon" />
+              <span className="row-text">
+                <span>Website &amp; forms</span>
+                <span className="muted">Your form address and test form</span>
+              </span>
+              <ChevronRight size={22} className="chev" />
+            </button>
+          </li>
+        </ul>
       )}
 
       <SectionTitle>This week</SectionTitle>

@@ -2,6 +2,7 @@
 
 import type { Account } from "./account";
 import type { Contact, LeadStatus } from "./data";
+import type { Customer } from "./customers";
 import { browserClient } from "./supabase/client";
 
 // Saves for a signed-in account. Each one calls a database function (0005) that works out the
@@ -43,6 +44,23 @@ export async function removeContact(id: string): Promise<Result> {
 
 export async function saveLeadStatus(id: string, status: LeadStatus): Promise<Result> {
   const { error } = await browserClient().rpc("set_lead_status", { p_lead: id, p_status: status });
+  return { error: message(error) };
+}
+
+export async function saveCustomer(c: Customer): Promise<Result & { id?: string }> {
+  const { data, error } = await browserClient().rpc("save_customer", {
+    p_id: c.id || null,
+    p_name: c.name,
+    p_phone: c.phone,
+    p_email: c.email,
+    p_address: c.address,
+    p_notes: c.notes,
+  });
+  return { id: data as string | undefined, error: message(error) };
+}
+
+export async function deleteCustomer(id: string): Promise<Result> {
+  const { error } = await browserClient().rpc("delete_customer", { p_id: id });
   return { error: message(error) };
 }
 
