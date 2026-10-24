@@ -25,10 +25,20 @@ type LeadRow = {
   urgency: string;
   state: string;
   received_at: string;
+  channel: string;
+  extra: { builder?: string; form?: string } | null;
   lead_events: { type: string; data: Record<string, unknown> | null; created_at: string }[];
 };
 
 const statusFor: Record<string, LeadStatus> = { contacted: "contacted", closed: "booked" };
+const builderNames: Record<string, string> = {
+  bricks: "Bricks",
+  divi: "Divi",
+  cf7: "Contact Form 7",
+  wpforms: "WPForms",
+  gravity: "Gravity Forms",
+  elementor: "Elementor",
+};
 
 export default async function AppPage() {
   const supabase = await serverClient();
@@ -39,7 +49,7 @@ export default async function AppPage() {
 
   const { data: membership } = await supabase
     .from("memberships")
-    .select("account_id, accounts(name, phone, city, timezone, trades, billing_status)")
+    .select("account_id, accounts(name, phone, city, timezone, trades, billing_status, sms_status)")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!membership) redirect("/onboarding");
@@ -56,18 +66,18 @@ export default async function AppPage() {
   ] = await Promise.all([
     supabase
       .from("leads")
-      .select("id, name, phone, email, service, message, address, urgency, state, received_at, lead_events(type, data, created_at)")
+      .select("id, name, phone, email, service, message, address, urgency, state, received_at, channel, extra, lead_events(type, data, created_at)")
       .eq("account_id", accountId)
       .in("risk_status", ["ok", "released"])
       .order("received_at", { ascending: false })
       .limit(100),
     supabase
       .from("contacts")
-      .select("id, name, role_label, phone, email, alert_sms, alert_email, alert_call")
+      .select("id, name, role_label, phone, email, alert_sms, alert_email, alert_call, consent_status, consent_evidence, phone_opted_out")
       .eq("account_id", accountId)
       .is("removed_at", null)
       .order("created_at"),
-    supabase.from("sites").select("domain, public_key").eq("account_id", accountId).order("created_at").limit(1).maybeSingle(),
+    supabase.from("sites").select("domain, public_key, plugin_secret, plugin_last_seen_at, plugin_site_url").eq("account_id", accountId).order("created_at").limit(1).maybeSingle(),
     supabase
       .from("customers")
       .select("id, name, phone, email, address, notes, source, created_at, leads(id)")
@@ -87,14 +97,27 @@ export default async function AppPage() {
 
   const now = Date.now();
   const minutesAgo = (iso: string) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
-  const contacts: Contact[] = (contactRows ?? []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    role: c.role_label ?? "",
-    phone: c.phone ?? "",
-    email: c.email ?? "",
-    channels: { sms: c.alert_sms, email: c.alert_email, call: c.alert_call },
-  }));
+  const contacts: Contact[] = (contactRows ?? []).map((c) => {
+    const agreedFor = (c.consent_evidence as { phone?: string } | null)?.phone;
+    const sms: Contact["sms"] = c.phone_opted_out
+      ? "opted_out"
+      : !c.alert_sms
+        ? "off"
+        : c.consent_status === "pending"
+          ? "pending"
+          : c.consent_status === "confirmed" && agreedFor === c.phone
+            ? "on"
+            : "off";
+    return {
+      id: c.id,
+      name: c.name,
+      role: c.role_label ?? "",
+      phone: c.phone ?? "",
+      email: c.email ?? "",
+      channels: { sms: sms === "on" || sms === "pending", email: c.alert_email, call: c.alert_call },
+      sms,
+    };
+  });
   const nameForEmail = (to: unknown) => contacts.find((c) => c.email && c.email === to)?.name ?? String(to ?? "");
 
   const leads: Lead[] = ((leadRows ?? []) as LeadRow[]).map((l) => ({
@@ -107,19 +130,25 @@ export default async function AppPage() {
     address: l.address ?? "",
     minutesAgo: minutesAgo(l.received_at),
     status: statusFor[l.state] ?? "new",
-    source: "Website form",
+    // Plugin leads say which builder and form they came from (D57).
+    source:
+      l.channel === "plugin" && l.extra?.builder
+        ? [builderNames[l.extra.builder] ?? l.extra.builder, l.extra.form].filter(Boolean).join(" · ")
+        : "Website form",
     urgent: l.urgency === "urgent",
     alerts: [...l.lead_events]
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
       .flatMap((e): AlertEvent[] => {
         const at = minutesAgo(e.created_at);
+        if (e.type === "alert_sent" && e.data?.channel === "sms") return [{ minutesAgo: at, text: `Texted ${String(e.data?.name ?? "")}`, ok: true }];
         if (e.type === "alert_sent") return [{ minutesAgo: at, text: `Emailed ${nameForEmail(e.data?.to)}`, ok: true }];
-        if (e.type === "alert_failed") return [{ minutesAgo: at, text: "Email alert didn't go through", ok: false }];
+        if (e.type === "alert_failed")
+          return [{ minutesAgo: at, text: e.data?.channel === "sms" ? `Text to ${String(e.data?.name ?? "")} didn't go through` : "Email alert didn't go through", ok: false }];
         return [];
       }),
   }));
 
-  type AccountRow = { name: string; phone: string | null; city: string | null; timezone: string; trades: string[]; billing_status: string };
+  type AccountRow = { name: string; phone: string | null; city: string | null; timezone: string; trades: string[]; billing_status: string; sms_status: string };
   type CustomerRow = {
     id: string;
     name: string;
@@ -223,6 +252,10 @@ export default async function AppPage() {
     ownerName: owner?.name ?? String(meta.full_name ?? meta.name ?? ""),
     ownerEmail: user.email ?? "",
     siteKey: site?.public_key ?? null,
+    smsStatus: row?.sms_status ?? "not_configured",
+    pluginCode: site?.public_key && site?.plugin_secret ? `MOB1.${site.public_key}.${site.plugin_secret}` : null,
+    pluginLastSeen: site?.plugin_last_seen_at ?? null,
+    pluginSiteUrl: site?.plugin_site_url ?? null,
   };
 
   return (

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { audit, requireAdmin } from "@/lib/server/admin";
 import { adminDb } from "@/lib/server/db";
 import { sendDailyDigests } from "@/lib/server/digest";
+import { sendSms } from "@/lib/server/twilio";
+import { inviteText } from "@/lib/consent";
 
 // Admin actions (D52). Each one re-checks that the caller is an admin, and the destructive ones
 // re-check the typed confirmation on the server, so a stray click or a forged request can't delete anything.
@@ -22,6 +24,34 @@ export async function setBusinessPaused(accountId: string, paused: boolean): Pro
   await audit(actor, paused ? "pause_business" : "resume_business", data.name, { account_id: accountId });
   revalidatePath("/admin");
   return {};
+}
+
+// Texts on/off for a business (D56). Turn on once its carrier registration is approved; turning on also
+// sends the YES-confirmation text to anyone who was added while texts were waiting.
+export async function setBusinessTexts(accountId: string, on: boolean): Promise<Result & { summary?: string }> {
+  const actor = await requireAdmin();
+  const db = adminDb();
+  const { data, error } = await db
+    .from("accounts")
+    .update({ sms_status: on ? "active" : "not_configured" })
+    .eq("id", accountId)
+    .select("name")
+    .maybeSingle();
+  if (error || !data) return { error: "Couldn't find that business." };
+
+  let invited = 0;
+  if (on) {
+    const [{ data: pending }, { data: owner }] = await Promise.all([
+      db.from("contacts").select("phone").eq("account_id", accountId).eq("alert_sms", true).eq("consent_status", "pending")
+        .eq("phone_opted_out", false).is("removed_at", null).not("phone", "is", null),
+      db.from("contacts").select("name").eq("account_id", accountId).eq("role_label", "Owner").limit(1).maybeSingle(),
+    ]);
+    const ownerFirst = (owner?.name ?? "Your boss").split(" ")[0]!;
+    for (const p of pending ?? []) if ((await sendSms(p.phone!, inviteText(ownerFirst, data.name))).ok) invited++;
+  }
+  await audit(actor, on ? "texts_on" : "texts_off", data.name, { account_id: accountId, invited });
+  revalidatePath("/admin");
+  return { summary: on ? `Texts are on for ${data.name}.${invited ? ` Sent ${invited} confirmation text${invited > 1 ? "s" : ""}.` : ""}` : `Texts are off for ${data.name}.` };
 }
 
 export async function deleteBusiness(accountId: string, typedName: string): Promise<Result> {

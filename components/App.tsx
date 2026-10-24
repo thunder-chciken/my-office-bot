@@ -27,6 +27,7 @@ import {
 } from "@/lib/live";
 import { attachLead, blankCustomer, customersFromLeads, type Customer } from "@/lib/customers";
 import { useWide } from "@/lib/useWide";
+import { turnOffTexts, turnOnTexts } from "@/app/app/actions";
 import { loadTestTarget, saveTestTarget, type TestTarget } from "@/lib/contact";
 import {
   blankEvent,
@@ -118,6 +119,33 @@ export default function App({
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
+
+  // ---- text alerts (D56): consent first, then the server sends the welcome or YES-confirmation text.
+
+  const textOn = async (c: Contact, self: boolean) => {
+    if (!live) {
+      setContacts((cs) => cs.map((x) => (x.id === c.id ? { ...x, channels: { ...x.channels, sms: true }, sms: "on" } : x)));
+      showToast(`Texts on for ${c.name}`);
+      return true;
+    }
+    const { state, note, error } = await turnOnTexts(c.id, self);
+    if (error || !state) {
+      showToast(error ?? "Couldn't turn on texts", true);
+      return false;
+    }
+    setContacts((cs) => cs.map((x) => (x.id === c.id ? { ...x, channels: { ...x.channels, sms: true }, sms: state } : x)));
+    showToast(note ?? "Saved");
+    return true;
+  };
+
+  const textOff = async (c: Contact) => {
+    if (live) {
+      const { error } = await turnOffTexts(c.id);
+      if (error) return showToast(error, true);
+    }
+    setContacts((cs) => cs.map((x) => (x.id === c.id ? { ...x, channels: { ...x.channels, sms: false }, sms: "off" } : x)));
+    showToast(`Texts off for ${c.name}`);
+  };
 
   // ---- customers (D53)
 
@@ -366,6 +394,8 @@ export default function App({
             onAdd={addContact}
             onUpdate={updateContact}
             onRemove={dropContact}
+            onTextOn={textOn}
+            onTextOff={textOff}
             rules={rules}
             setRules={setRules}
             onTest={sendTestLead}

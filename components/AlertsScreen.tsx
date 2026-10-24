@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { BellRing, Mail, MessageSquare, Pencil, Phone, Trash2, UserPlus } from "lucide-react";
 import type { Channel, Contact, Rules } from "@/lib/data";
 import { useAccount } from "@/lib/account";
+import { SELF_TEXT_CONSENT } from "@/lib/consent";
 import { Avatar, Header, SectionTitle, Segmented, Sheet, Toggle } from "./ui";
 
 const channelMeta: { key: Channel; label: string; Icon: typeof Phone }[] = [
@@ -17,15 +18,17 @@ const channelMeta: { key: Channel; label: string; Icon: typeof Phone }[] = [
 function ChannelPicker({
   value,
   onChange,
+  textAfterSave = false,
 }: {
   value: Record<Channel, boolean>;
   onChange: (v: Record<Channel, boolean>) => void;
+  textAfterSave?: boolean;
 }) {
   const { live } = useAccount();
   return (
     <div className="chan-row">
       {channelMeta.map(({ key, label, Icon }) => {
-        const soon = live && key !== "email";
+        const soon = live && (key === "call" || (key === "sms" && textAfterSave));
         return (
           <button
             key={key}
@@ -37,7 +40,7 @@ function ChannelPicker({
           >
             <Icon size={24} strokeWidth={2.4} />
             {label}
-            {soon && <span className="chan-soon">Soon</span>}
+            {soon && <span className="chan-soon">{key === "sms" ? "After save" : "Soon"}</span>}
           </button>
         );
       })}
@@ -50,6 +53,8 @@ export function AlertsScreen({
   onAdd,
   onUpdate,
   onRemove,
+  onTextOn,
+  onTextOff,
   rules,
   setRules,
   onTest,
@@ -58,12 +63,16 @@ export function AlertsScreen({
   onAdd: (c: Contact) => Promise<boolean>;
   onUpdate: (c: Contact) => Promise<boolean>;
   onRemove: (c: Contact) => void;
+  onTextOn: (c: Contact, self: boolean) => Promise<boolean>;
+  onTextOff: (c: Contact) => Promise<void>;
   rules: Rules;
   setRules: (r: Rules) => void;
   onTest: () => void;
 }) {
-  const { live } = useAccount();
+  const account = useAccount();
+  const { live } = account;
   const [editing, setEditing] = useState<Contact | "new" | null>(null);
+  const [texting, setTexting] = useState<Contact | null>(null);
   const callTargets = contacts.filter((c) => c.channels.call).map((c) => c.name);
 
   return (
@@ -89,6 +98,8 @@ export function AlertsScreen({
                   <p className="contact-name">
                     {c.name} {c.role && <span className="pill">{c.role}</span>}
                   </p>
+                  {live && c.sms === "pending" && <p className="sms-note">Text alerts: waiting for them to reply YES</p>}
+                  {live && c.sms === "opted_out" && <p className="sms-note is-warn">Replied STOP to texts. They can text START to turn them back on.</p>}
                   <p className="muted truncate">{live ? c.email || c.phone || "No email yet" : c.phone}</p>
                 </div>
                 <button className="icon-btn" aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)}>
@@ -101,6 +112,11 @@ export function AlertsScreen({
               <ChannelPicker
                 value={c.channels}
                 onChange={(channels) => {
+                  if (live && channels.sms !== c.channels.sms) {
+                    if (channels.sms) setTexting(c);
+                    else void onTextOff(c);
+                    return;
+                  }
                   if (channels.email && !c.email) return setEditing({ ...c, channels });
                   void onUpdate({ ...c, channels });
                 }}
@@ -115,11 +131,23 @@ export function AlertsScreen({
 
       {live ? (
         <div className="card pad soon-card">
-          <p className="card-lead">Texts, calls and quiet hours are next</p>
-          <p className="muted">
-            During the beta, everyone with Email on gets each new lead within seconds. Text alerts, a phone call when
-            nobody replies, and night-time rules arrive after that.
-          </p>
+          {account.smsStatus === "active" ? (
+            <>
+              <p className="card-lead">Text alerts are on for your business</p>
+              <p className="muted">
+                Turn on Text for anyone above. You agree for yourself in the app; anyone else gets a text and replies YES.
+                A phone call when nobody replies, and night-time rules, are next.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="card-lead">Text alerts are waiting on carrier approval</p>
+              <p className="muted">
+                Email alerts work now. You can turn on Text for people already; texts start the day your business is
+                approved. Phone calls and night-time rules come after that.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <>
@@ -172,6 +200,19 @@ export function AlertsScreen({
       <button className="btn btn-primary btn-block btn-xl" onClick={onTest}>
         <BellRing size={24} strokeWidth={2.4} /> Send me a test alert
       </button>
+
+      <TextSheet
+        person={texting}
+        isMe={!!texting && !!texting.email && texting.email.toLowerCase() === account.ownerEmail.toLowerCase()}
+        onClose={() => setTexting(null)}
+        onEdit={(c) => {
+          setTexting(null);
+          setEditing(c);
+        }}
+        onConfirm={async (c, self) => {
+          if (await onTextOn(c, self)) setTexting(null);
+        }}
+      />
 
       <PersonSheet
         person={editing}
@@ -250,12 +291,77 @@ function PersonForm({ person, onSave }: { person: Contact | "new"; onSave: (c: C
       </label>
       <div className="field">
         <span>Alert them by</span>
-        <ChannelPicker value={channels} onChange={setChannels} />
+        <ChannelPicker value={channels} onChange={setChannels} textAfterSave={live} />
         {channels.email && !email.trim() && <p className="muted">Add an email address to send alerts there.</p>}
+        {live && <p className="muted">Text alerts: save first, then tap Text on their card so they can agree.</p>}
       </div>
       <button className="btn btn-primary btn-block btn-xl" disabled={!valid || busy} onClick={save}>
         {busy ? "Saving…" : "Save person"}
       </button>
     </div>
+  );
+}
+
+// Turning on text alerts needs consent (SPEC §8): you tick the box for your own number;
+// anyone else gets a text and replies YES.
+function TextSheet({
+  person,
+  isMe,
+  onClose,
+  onEdit,
+  onConfirm,
+}: {
+  person: Contact | null;
+  isMe: boolean;
+  onClose: () => void;
+  onEdit: (c: Contact) => void;
+  onConfirm: (c: Contact, self: boolean) => Promise<void>;
+}) {
+  const [agreed, setAgreed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const go = async (c: Contact, self: boolean) => {
+    setBusy(true);
+    await onConfirm(c, self);
+    setBusy(false);
+    setAgreed(false);
+  };
+
+  return (
+    <Sheet open={!!person} onClose={onClose} title="Text alerts">
+      {person &&
+        (!person.phone.trim() ? (
+          <div className="form">
+            <p className="card-lead">Add {person.name}&apos;s mobile number first</p>
+            <button className="btn btn-primary btn-block btn-xl" onClick={() => onEdit(person)}>
+              Add a number
+            </button>
+          </div>
+        ) : isMe ? (
+          <div className="form">
+            <p className="card-lead">Get a text for every new lead at {person.phone}</p>
+            <label className="consent-check">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+              <span>{SELF_TEXT_CONSENT}</span>
+            </label>
+            <button className="btn btn-primary btn-block btn-xl" disabled={!agreed || busy} onClick={() => go(person, true)}>
+              {busy ? "Turning on…" : "Turn on text alerts"}
+            </button>
+          </div>
+        ) : (
+          <div className="form">
+            <p className="card-lead">
+              We&apos;ll text {person.name} at {person.phone} to confirm
+            </p>
+            <div className="bubble">
+              <p className="bubble-label">They&apos;ll get</p>
+              <p className="bubble-text">My Office Bot: [you] at [your business] added you to get new-lead alerts by text. Reply YES to agree or STOP to opt out.</p>
+            </div>
+            <p className="muted">Their alerts start when they reply YES. Only add people who expect these texts.</p>
+            <button className="btn btn-primary btn-block btn-xl" disabled={busy} onClick={() => go(person, false)}>
+              {busy ? "Sending…" : `Text ${person.name.split(" ")[0]} to confirm`}
+            </button>
+          </div>
+        ))}
+    </Sheet>
   );
 }

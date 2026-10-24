@@ -3080,6 +3080,100 @@ a.row-btn {
   max-width: 1120px;
 }
 
+/* ---------- Text alerts ---------- */
+
+.sms-note {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8a5a00;
+}
+
+.sms-note.is-warn {
+  color: var(--red);
+}
+
+.consent-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--bg-soft);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.consent-check input {
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  flex: none;
+  accent-color: var(--blue);
+}
+
+.pill.admin-toggle {
+  border: 0;
+  cursor: pointer;
+  min-width: 44px;
+}
+
+/* ---------- Website: WordPress plugin ---------- */
+
+.wp-card {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.wp-card .connect-top {
+  margin-bottom: 0;
+}
+
+.wp-status {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--bg-soft);
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.wp-status.is-on {
+  background: var(--green-50);
+  color: var(--green);
+}
+
+.wp-steps {
+  display: grid;
+  gap: 8px;
+  padding-left: 22px;
+  list-style: decimal;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.wp-card .copy-box {
+  margin: 0;
+}
+
+.field-label {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.wp-rotate {
+  justify-self: start;
+  font-size: 15px;
+}
+
+.wp-rotate.is-armed {
+  color: var(--red);
+}
+
 /* ---------- Accessibility preferences ---------- */
 
 @media (prefers-reduced-motion: reduce) {

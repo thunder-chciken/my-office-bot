@@ -15,6 +15,12 @@ export type Account = {
   ownerName: string;
   ownerEmail: string;
   siteKey: string | null;
+  /** 'active' once the business's texting is approved; texts don't send before that. */
+  smsStatus: string;
+  /** WordPress plugin (D57): the private connection code, and when the plugin last checked in. */
+  pluginCode: string | null;
+  pluginLastSeen: string | null;
+  pluginSiteUrl: string | null;
 };
 
 export const demoAccount: Account = {
@@ -28,6 +34,10 @@ export const demoAccount: Account = {
   ownerName: "Matt",
   ownerEmail: "",
   siteKey: null,
+  smsStatus: "active",
+  pluginCode: null,
+  pluginLastSeen: null,
+  pluginSiteUrl: null,
 };
 
 const AccountContext = createContext<Account>(demoAccount);

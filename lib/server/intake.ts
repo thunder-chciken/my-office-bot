@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { adminDb } from "./db";
 import { cardToken } from "./cardLink";
 import { leadAlertEmail, sendEmail } from "./email";
+import { leadAlertText, sendSms, TWILIO_OPTED_OUT } from "./twilio";
 import { countLinks, emergencyWords, isValidEmail, normalizeLead, phoneDigits } from "./normalize";
 
 // Website form → lead → step-0 email alerts (SPEC §6, §9–§11, decision D37).
@@ -18,13 +19,14 @@ const HOURLY_LEAD_CAP = 30; // per site; beyond this, leads are quarantined (pro
 export async function handleFormSubmission(
   siteKey: string,
   raw: Record<string, unknown>,
-  meta: { pageUrl: string | null },
+  // channel "plugin" + extra (builder/form) come from the signed WordPress plugin (D57).
+  meta: { pageUrl: string | null; channel?: "form" | "plugin"; extra?: Record<string, unknown> },
 ): Promise<IntakeResult> {
   const db = adminDb();
 
   const { data: site, error: siteErr } = await db
     .from("sites")
-    .select("id, account_id, domain, accounts(timezone, billing_status)")
+    .select("id, account_id, domain, accounts(timezone, billing_status, sms_status)")
     .eq("public_key", siteKey)
     .maybeSingle();
   if (siteErr) throw siteErr;
@@ -76,7 +78,8 @@ export async function handleFormSubmission(
   const leadRow = {
     account_id: site.account_id,
     site_id: site.id,
-    channel: "form",
+    channel: meta.channel ?? "form",
+    extra: meta.extra ?? {},
     external_event_id: eventId,
     ...fields,
     page_url: meta.pageUrl?.slice(0, 500) ?? null,
@@ -104,7 +107,7 @@ export async function handleFormSubmission(
 
   const lead = inserted[0]!;
   const events: { type: string; data?: Record<string, unknown> }[] = [
-    { type: "received", data: { channel: "form", urgent } },
+    { type: "received", data: { channel: meta.channel ?? "form", urgent, ...(meta.extra ?? {}) } },
   ];
   if (riskStatus === "quarantined") events.push({ type: "quarantined", data: { risk_score: riskScore } });
   if (riskStatus === "spam") events.push({ type: "marked_spam", data: { reason: "honeypot" } });
@@ -139,6 +142,61 @@ export async function handleFormSubmission(
   });
 
   let sent = 0;
+
+  // ---- step 0 texts (D56): only once the business's texting is approved (sms_status 'active'), and only to
+  // people who agreed (owner's in-app consent or a YES reply) for this exact number and haven't replied STOP.
+  const smsStatus = (Array.isArray(acct) ? acct[0] : acct) as unknown as { sms_status?: string } | null;
+  if (smsStatus?.sms_status === "active") {
+    const { data: texters, error: tErr } = await db
+      .from("contacts")
+      .select("id, name, phone, consent_evidence")
+      .eq("account_id", site.account_id)
+      .eq("alert_sms", true)
+      .eq("consent_status", "confirmed")
+      .eq("phone_opted_out", false)
+      .is("removed_at", null)
+      .not("phone", "is", null);
+    if (tErr) throw tErr;
+    const body = leadAlertText({ ...fields, urgent });
+    for (const contact of texters ?? []) {
+      if ((contact.consent_evidence as { phone?: string } | null)?.phone !== contact.phone) continue; // number changed since they agreed
+      const idempotencyKey = `${lead.id}:0:${contact.id}:sms`;
+      const { data: attempt, error: aErr } = await db
+        .from("notification_attempts")
+        .insert({
+          account_id: site.account_id,
+          lead_id: lead.id,
+          contact_id: contact.id,
+          channel: "sms",
+          step: 0,
+          status: "dispatching",
+          attempt_count: 1,
+          idempotency_key: idempotencyKey,
+          to_address: contact.phone,
+        })
+        .select("id")
+        .single();
+      if (aErr) {
+        if (aErr.code === "23505") continue;
+        throw aErr;
+      }
+      const result = await sendSms(contact.phone!, body);
+      const now = new Date().toISOString();
+      if (result.ok) {
+        sent++;
+        await db.from("notification_attempts").update({ status: "sent", provider_sid: result.sid, updated_at: now }).eq("id", attempt.id);
+        await logEvents(site.account_id, lead.id, [{ type: "alert_sent", data: { channel: "sms", name: contact.name } }]);
+      } else {
+        await db
+          .from("notification_attempts")
+          .update({ status: result.retryable ? "uncertain" : "failed", error: result.error, updated_at: now })
+          .eq("id", attempt.id);
+        if (result.code === TWILIO_OPTED_OUT) await db.from("contacts").update({ phone_opted_out: true }).eq("id", contact.id);
+        await logEvents(site.account_id, lead.id, [{ type: "alert_failed", data: { channel: "sms", name: contact.name, error: result.error } }]);
+      }
+    }
+  }
+
   for (const contact of contacts ?? []) {
     const idempotencyKey = `${lead.id}:0:${contact.id}:email`;
     const { data: attempt, error: aErr } = await db

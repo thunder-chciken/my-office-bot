@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Building2, History, Mail, PauseCircle, PlayCircle, Search, Trash2, Users } from "lucide-react";
 import type { AdminBusiness, AdminData, AdminPerson } from "@/lib/server/admin";
-import { deleteBusiness, deletePerson, sendCrewEmailsNow, setBusinessPaused } from "@/app/admin/actions";
+import { deleteBusiness, deletePerson, sendCrewEmailsNow, setBusinessPaused, setBusinessTexts } from "@/app/admin/actions";
 import { browserClient } from "@/lib/supabase/client";
 import { Mascot, Segmented } from "../ui";
 
@@ -127,6 +127,7 @@ export function AdminConsole({ data, meId, meEmail }: { data: AdminData; meId: s
                   <th className="num">7 days</th>
                   <th>Last lead</th>
                   <th>Status</th>
+                  <th>Texts</th>
                   <th aria-label="Actions" />
                 </tr>
               </thead>
@@ -146,6 +147,22 @@ export function AdminConsole({ data, meId, meEmail }: { data: AdminData; meId: s
                       <span className={`pill ${b.status === "suspended" ? "pill-urgent" : "status-booked"}`}>
                         {b.status === "suspended" ? "Paused" : "Active"}
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        className={`pill admin-toggle ${b.smsStatus === "active" ? "status-booked" : ""}`}
+                        disabled={pending}
+                        title={b.smsStatus === "active" ? "Turn texts off for this business" : "Turn texts on once its carrier registration is approved"}
+                        onClick={() =>
+                          start(async () => {
+                            const { error, summary } = await setBusinessTexts(b.id, b.smsStatus !== "active");
+                            setNotice(error ? { text: error, error: true } : { text: summary ?? "Done." });
+                            router.refresh();
+                          })
+                        }
+                      >
+                        {b.smsStatus === "active" ? "On" : "Off"}
+                      </button>
                     </td>
                     <td className="admin-actions">
                       <button
@@ -169,7 +186,7 @@ export function AdminConsole({ data, meId, meEmail }: { data: AdminData; meId: s
                 ))}
                 {businesses.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="empty">No businesses match.</td>
+                    <td colSpan={9} className="empty">No businesses match.</td>
                   </tr>
                 )}
               </tbody>

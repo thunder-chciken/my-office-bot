@@ -30,6 +30,7 @@ export type AdminBusiness = {
   name: string;
   createdAt: string;
   status: string;
+  smsStatus: string;
   city: string | null;
   domain: string | null;
   owners: { userId: string; email: string }[];
@@ -66,7 +67,7 @@ export async function loadAdminData(): Promise<AdminData> {
   const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
 
   const [accounts, memberships, sites, contacts, leads, problems, auditRows, users] = await Promise.all([
-    db.from("accounts").select("id, name, created_at, billing_status, city").order("created_at", { ascending: false }),
+    db.from("accounts").select("id, name, created_at, billing_status, sms_status, city").order("created_at", { ascending: false }),
     db.from("memberships").select("account_id, user_id, role"),
     db.from("sites").select("account_id, domain"),
     db.from("contacts").select("account_id").is("removed_at", null),
@@ -96,6 +97,7 @@ export async function loadAdminData(): Promise<AdminData> {
       name: a.name,
       createdAt: a.created_at,
       status: a.billing_status,
+      smsStatus: a.sms_status,
       city: a.city,
       domain: (sites.data ?? []).find((s) => s.account_id === a.id)?.domain || null,
       owners: members.filter((m) => m.account_id === a.id).map((m) => ({ userId: m.user_id, email: emailOf(m.user_id) })),

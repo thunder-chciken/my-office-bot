@@ -32,6 +32,8 @@ export type Contact = {
   phone: string;
   email: string;
   channels: Record<Channel, boolean>;
+  /** Text alerts in a real account (D56): on, waiting for a YES reply, opted out by STOP, or off. */
+  sms?: "off" | "pending" | "on" | "opted_out";
 };
 
 export type Rules = {
