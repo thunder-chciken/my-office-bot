@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { MessageSquare, Phone, Zap } from "lucide-react";
-import { business, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
+import { timeAgo, type Lead, type LeadStatus } from "@/lib/data";
+import { useAccount } from "@/lib/account";
 import { reach, smsHref, telHref, type TestTarget } from "@/lib/contact";
 import { Avatar, Header, Mascot, Segmented } from "./ui";
 
@@ -18,6 +19,7 @@ export function LeadsScreen({
   onOpen: (id: string) => void;
   onContact: (lead: Lead, how: "call" | "text") => void;
 }) {
+  const account = useAccount();
   const [filter, setFilter] = useState<LeadStatus>("new");
   const count = (s: LeadStatus) => leads.filter((l) => l.status === s).length;
   const waiting = leads.filter((l) => l.status === "new");
@@ -26,7 +28,7 @@ export function LeadsScreen({
 
   return (
     <>
-      <Header title="Leads" subtitle={business.name} />
+      <Header title="Leads" subtitle={account.name} />
 
       {waiting.length > 0 ? (
         <div className="hero">

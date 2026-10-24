@@ -2,9 +2,10 @@
 
 import { Code2, Copy, Inbox, Send, Webhook } from "lucide-react";
 import { business } from "@/lib/data";
+import { useAccount } from "@/lib/account";
 import { Header, SectionTitle } from "./ui";
 
-const connectOptions = [
+const demoOptions = [
   {
     Icon: Code2,
     title: "Add one line to your site",
@@ -25,6 +26,32 @@ const connectOptions = [
   },
 ];
 
+// A signed-in business's real ways in: its own form key.
+function liveOptions(siteKey: string) {
+  const endpoint = `https://myofficebot.app/api/v1/forms/${siteKey}`;
+  return [
+    {
+      Icon: Webhook,
+      title: "Send your form here",
+      body: "Set your website form's action (or webhook URL) to this address. Works with WordPress, Bricks, Gravity Forms and Zapier.",
+      value: endpoint,
+    },
+    {
+      Icon: Code2,
+      title: "Or paste a ready-made form",
+      body: "A simple contact form that sends straight to you.",
+      value: `<form action="${endpoint}" method="POST">
+  <input name="name" placeholder="Name" required>
+  <input name="phone" placeholder="Phone">
+  <input name="email" type="email" placeholder="Email">
+  <textarea name="message" placeholder="How can we help?"></textarea>
+  <input name="website" style="display:none" tabindex="-1" autocomplete="off">
+  <button>Send</button>
+</form>`,
+    },
+  ];
+}
+
 export function WebsiteScreen({
   onCopy,
   onTestLead,
@@ -32,6 +59,8 @@ export function WebsiteScreen({
   onCopy: (text: string) => void;
   onTestLead: () => void;
 }) {
+  const account = useAccount();
+  const connectOptions = account.live ? (account.siteKey ? liveOptions(account.siteKey) : []) : demoOptions;
   return (
     <>
       <Header title="Website" subtitle="Where your leads come from" />
@@ -39,9 +68,11 @@ export function WebsiteScreen({
       <div className="card pad status-card">
         <span className="live-dot" aria-hidden />
         <div>
-          <p className="card-lead">Connected</p>
-          <p className="status-site">{business.website}</p>
-          <p className="muted">New leads reach your phone in about 2 seconds.</p>
+          <p className="card-lead">{account.live ? "Ready for leads" : "Connected"}</p>
+          <p className="status-site">{account.live ? account.website || "Your website" : business.website}</p>
+          <p className="muted">
+            {account.live ? "New leads email you within seconds." : "New leads reach your phone in about 2 seconds."}
+          </p>
         </div>
       </div>
 

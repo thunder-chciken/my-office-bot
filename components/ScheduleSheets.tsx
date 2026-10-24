@@ -17,7 +17,8 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { business, type Contact } from "@/lib/data";
+import type { Contact } from "@/lib/data";
+import { useAccount } from "@/lib/account";
 import { mapsHref, smsHref, telHref, toE164, useIsApple, type TestTarget } from "@/lib/contact";
 import {
   addDays,
@@ -569,8 +570,9 @@ export function NotifySheet({
   onClose: () => void;
   onSent: (e: ScheduleEvent, how: "text" | "email") => void;
 }) {
+  const account = useAccount();
   const e = target?.event;
-  const msg = e && job ? homeownerMessage(e, job, business.name, target.moved) : "";
+  const msg = e && job ? homeownerMessage(e, job, account.name, target.moved) : "";
   const phone = test.phone.trim() || job?.phone || "";
   const email = test.email.trim() || job?.email || "";
   const staff = e ? people(e, crews).map((id) => nameOf(id, contacts)) : [];
@@ -620,7 +622,7 @@ export function NotifySheet({
                 {email && (
                   <a
                     className="btn btn-soft btn-block"
-                    href={`mailto:${email}?subject=${encodeURIComponent(`Your ${e.title.toLowerCase()} with ${business.name}`)}&body=${encodeURIComponent(msg)}`}
+                    href={`mailto:${email}?subject=${encodeURIComponent(`Your ${e.title.toLowerCase()} with ${account.name}`)}&body=${encodeURIComponent(msg)}`}
                     onClick={() => onSent(e, "email")}
                   >
                     <Mail size={22} strokeWidth={2.5} /> Email instead

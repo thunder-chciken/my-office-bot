@@ -1129,7 +1129,7 @@ a:focus-visible {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 14px;
   color: var(--ink-2);
-  white-space: nowrap;
+  white-space: pre;
 }
 
 /* ---------- Business screen ---------- */
@@ -1909,6 +1909,219 @@ a:focus-visible {
 
 .schedule-lead {
   margin-top: 24px;
+}
+
+/* ---------- Sign in / create account ---------- */
+
+.auth-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: start center;
+  padding: calc(env(safe-area-inset-top) + 24px) 16px 40px;
+  background: linear-gradient(180deg, var(--blue-50), var(--bg) 60%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 22px 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.auth-title {
+  margin-top: 22px;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+}
+
+.auth-sub {
+  margin: 6px 0 22px;
+}
+
+.auth-title + .auth-sent,
+.auth-title + .btn,
+.auth-title + .form {
+  margin-top: 22px;
+}
+
+.google-btn {
+  background: #fff;
+  color: var(--ink);
+  border: 2px solid var(--line);
+}
+
+.google-btn:active {
+  background: var(--bg-soft);
+}
+
+.google-btn:disabled {
+  opacity: 0.6;
+}
+
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 4px;
+  color: var(--ink-3);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.auth-or::before,
+.auth-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.auth-error {
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--red-50);
+  color: #8f1d20;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.google-btn + .auth-error {
+  margin-top: 12px;
+}
+
+.auth-small {
+  margin-top: -10px;
+  font-size: 15px;
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 22px;
+  font-size: 17px;
+}
+
+.auth-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--blue);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.auth-sent {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--blue-50);
+  color: var(--blue);
+  font-size: 18px;
+}
+
+.auth-sent p {
+  color: var(--ink);
+}
+
+.auth-sent + .auth-small {
+  margin: 0 0 12px;
+}
+
+.stage-cta {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.stage-cta .btn {
+  text-decoration: none;
+}
+
+a.row-btn {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---------- Privacy & terms ---------- */
+
+.legal-page {
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 24px) 16px 48px;
+  background: linear-gradient(180deg, var(--blue-50), var(--bg) 40%);
+}
+
+.legal-card {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 22px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.legal-card .auth-title {
+  color: var(--ink);
+}
+
+.legal-card h2 {
+  margin: 28px 0 8px;
+  font-size: 21px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.legal-card > p {
+  margin-top: 10px;
+}
+
+.legal-card ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.legal-card a {
+  color: var(--blue);
+}
+
+.legal-card .legal-foot {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.auth-legal {
+  margin-top: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-legal a {
+  color: var(--ink-2);
 }
 
 /* ---------- Accessibility preferences ---------- */

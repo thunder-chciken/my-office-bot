@@ -2,6 +2,7 @@
 
 import { CalendarPlus, Check, Clock, FlaskConical, Mail, MapPin, MessageSquare, Navigation, Phone, Send } from "lucide-react";
 import { firstName, quickReplies, statusLabel, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
+import { useAccount } from "@/lib/account";
 import { mailHref, mapsHref, reach, smsHref, telHref, useIsApple, type TestTarget } from "@/lib/contact";
 import { Avatar, Segmented, Sheet } from "./ui";
 
@@ -23,6 +24,7 @@ export function LeadSheet({
   onSchedule: (lead: Lead) => void;
 }) {
   const apple = useIsApple();
+  const account = useAccount();
   const to = lead ? reach(lead, test) : null;
   const testing = !!(test.phone.trim() || test.email.trim());
 
@@ -54,7 +56,7 @@ export function LeadSheet({
             <a className="action-tile" href={smsHref(to.phone)} onClick={() => onContact(lead, "text")}>
               <MessageSquare size={28} strokeWidth={2.4} /> Text
             </a>
-            <a className="action-tile" href={mailHref(to.email, lead)} onClick={() => onContact(lead, "email")}>
+            <a className="action-tile" href={mailHref(to.email, lead, account)} onClick={() => onContact(lead, "email")}>
               <Mail size={28} strokeWidth={2.4} /> Email
             </a>
             <a
@@ -80,7 +82,7 @@ export function LeadSheet({
               </a>
             </li>
             <li>
-              <a className="row row-link" href={mailHref(to.email, lead)} onClick={() => onContact(lead, "email")}>
+              <a className="row row-link" href={mailHref(to.email, lead, account)} onClick={() => onContact(lead, "email")}>
                 <Mail size={22} className="row-icon" /> <span className="truncate">{lead.email}</span>
               </a>
             </li>

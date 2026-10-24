@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { business, firstName, type Lead } from "./data";
+import { firstName, type Lead } from "./data";
 
 // Builds the links that hand off to the phone's own Phone, Messages, Mail and Maps apps.
 
@@ -20,9 +20,9 @@ export const telHref = (phone: string) => `tel:${toE164(phone)}`;
 export const smsHref = (phone: string, body?: string) =>
   `sms:${toE164(phone)}${body ? `?&body=${encodeURIComponent(body)}` : ""}`;
 
-export function mailHref(email: string, lead: Lead) {
+export function mailHref(email: string, lead: Lead, from: { name: string; ownerName: string }) {
   const subject = `Your ${lead.service.toLowerCase()} request`;
-  const body = `Hi ${firstName(lead.name)},\n\nThanks for reaching out to ${business.name} about your ${lead.service.toLowerCase()}. When is a good time to come take a look?\n\nThanks,\nMatt\n${business.name}`;
+  const body = `Hi ${firstName(lead.name)},\n\nThanks for reaching out to ${from.name} about your ${lead.service.toLowerCase()}. When is a good time to come take a look?\n\nThanks,\n${firstName(from.ownerName)}\n${from.name}`;
   return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 

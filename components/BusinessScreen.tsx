@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronRight, Droplet, Grid3x3, Hammer, Home, LifeBuoy, LogOut, Wind, Zap, CreditCard } from "lucide-react";
-import { business, initials } from "@/lib/data";
+import { Check, ChevronRight, Droplet, Grid3x3, Hammer, Home, LifeBuoy, LogIn, LogOut, UserPlus, Wind, Zap, CreditCard } from "lucide-react";
+import { initials } from "@/lib/data";
+import { useAccount } from "@/lib/account";
+import { browserClient } from "@/lib/supabase/client";
 import type { TestTarget } from "@/lib/contact";
 import { Header, SectionTitle } from "./ui";
 
@@ -24,6 +26,11 @@ export function BusinessScreen({
   test: TestTarget;
   onTestChange: (t: TestTarget) => void;
 }) {
+  const account = useAccount();
+  const signOut = async () => {
+    await browserClient().auth.signOut();
+    window.location.href = "/login";
+  };
   const [selected, setSelected] = useState<string[]>(["Roofing", "Remodeling", "Tile"]);
   const toggle = (t: string) =>
     setSelected((s) => (s.includes(t) ? s.filter((x) => x !== t) : [...s, t]));
@@ -33,10 +40,10 @@ export function BusinessScreen({
       <Header title="Business" />
 
       <div className="card pad profile">
-        <span className="logo-tile">{initials(business.name)}</span>
+        <span className="logo-tile">{initials(account.name)}</span>
         <div>
-          <p className="card-lead">{business.name}</p>
-          <p className="muted">{business.city}</p>
+          <p className="card-lead">{account.name}</p>
+          <p className="muted">{account.live ? account.ownerEmail : account.city}</p>
         </div>
       </div>
 
@@ -114,7 +121,7 @@ export function BusinessScreen({
             <CreditCard size={22} className="row-icon" />
             <span className="row-text">
               <span>Plan</span>
-              <span className="muted">Pro trial · 12 days left</span>
+              <span className="muted">{account.live ? "Free beta" : "Pro trial · 12 days left"}</span>
             </span>
             <ChevronRight size={22} className="chev" />
           </button>
@@ -126,12 +133,31 @@ export function BusinessScreen({
             <ChevronRight size={22} className="chev" />
           </button>
         </li>
-        <li>
-          <button className="row row-btn is-danger">
-            <LogOut size={22} className="row-icon" />
-            <span className="row-text">Sign out</span>
-          </button>
-        </li>
+        {account.live ? (
+          <li>
+            <button className="row row-btn is-danger" onClick={signOut}>
+              <LogOut size={22} className="row-icon" />
+              <span className="row-text">Sign out</span>
+            </button>
+          </li>
+        ) : (
+          <>
+            <li>
+              <a className="row row-btn row-link" href="/signup">
+                <UserPlus size={22} className="row-icon" />
+                <span className="row-text">Create your account</span>
+                <ChevronRight size={22} className="chev" />
+              </a>
+            </li>
+            <li>
+              <a className="row row-btn row-link" href="/login">
+                <LogIn size={22} className="row-icon" />
+                <span className="row-text">Sign in</span>
+                <ChevronRight size={22} className="chev" />
+              </a>
+            </li>
+          </>
+        )}
       </ul>
     </>
   );

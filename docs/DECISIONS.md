@@ -84,3 +84,10 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | # | Decision | Why |
 | --- | --- | --- |
 | D48 | **Scheduling MVP** = lead-to-appointment, crew assignment with database-checked conflicts, basic multi-day project blocks, Today/Week/List/Unscheduled views, staff email reminders, manual reschedule with a notify preview. **V2** = homeowner booking link, read-only .ics feed, one-tap "next workday", drag-and-drop. **Later** = two-way Google sync, weather suggestions, dispatch. Plan in `docs/SCHEDULING.md`. | Contractors need both where they're going and where crews are committed; sync and self-booking add complexity before demand is proven. Keep it an extension of the lead inbox. |
+
+## Accounts and sign-in (2026-10-23)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D49 | **Sign-in is Supabase Auth: Google, or email + password (8+ characters, email confirmation required).** First sign-in goes to `/onboarding`, which calls `create_my_account()` (0004) to create the account, owner membership, owner alert contact and form key in one step. The signed-in app lives at `/app`; the public demo stays at `/`. Confirm and reset emails use token-hash links to `/auth/confirm`, so they work on a different device; Google returns via `/auth/callback`. Auth emails send through Resend SMTP from no-reply@myofficebot.app. | Matt wants people to sign up with Google or email and password. Supabase's built-in email only reaches team members, so custom SMTP is required for real sign-ups. |
+| D50 | **Plain-language beta Privacy (`/privacy`) and Terms (`/terms`) pages**, linked from sign-up and Google's consent screen (required to publish Google sign-in). Terms say alerts are a backup, not a guarantee, and cap liability at fees paid ($0 in the free beta). **A lawyer reviews both before outside contractors join** (R&D 009). Contact is support@myofficebot.app (Cloudflare Email Routing → Gmail). | Google requires these links. Keeps Matt's personal email out of the public repo. |

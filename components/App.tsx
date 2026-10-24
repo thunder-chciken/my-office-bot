@@ -10,9 +10,11 @@ import {
   seedRules,
   testLeadPool,
   timeAgo,
+  type Contact,
   type Lead,
   type LeadStatus,
 } from "@/lib/data";
+import { AccountProvider, demoAccount, type Account } from "@/lib/account";
 import { loadTestTarget, saveTestTarget, type TestTarget } from "@/lib/contact";
 import {
   blankEvent,
@@ -44,10 +46,19 @@ const tabs: { id: Tab; label: string; Icon: typeof Inbox }[] = [
   { id: "business", label: "Business", Icon: Building2 },
 ];
 
-export default function App() {
+export default function App({
+  account = demoAccount,
+  initialLeads,
+  initialContacts,
+}: {
+  account?: Account;
+  initialLeads?: Lead[];
+  initialContacts?: Contact[];
+}) {
+  const live = account.live;
   const [tab, setTab] = useState<Tab>("leads");
-  const [leads, setLeads] = useState(seedLeads);
-  const [contacts, setContacts] = useState(seedContacts);
+  const [leads, setLeads] = useState(initialLeads ?? seedLeads);
+  const [contacts, setContacts] = useState(initialContacts ?? seedContacts);
   const [rules, setRules] = useState(seedRules);
   const [openId, setOpenId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -56,9 +67,10 @@ export default function App() {
   const bannerTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const testIndex = useRef(0);
   const [test, setTest] = useState<TestTarget>({ phone: "", email: "" });
-  const [crews] = useState(seedCrews);
-  const [jobs, setJobs] = useState<Job[]>(() => seedSchedule().jobs);
-  const [events, setEvents] = useState<ScheduleEvent[]>(() => seedSchedule().events);
+  // Signed-in accounts start with an empty calendar; saving it to the database comes next.
+  const [crews] = useState(live ? [] : seedCrews);
+  const [jobs, setJobs] = useState<Job[]>(() => (live ? [] : seedSchedule().jobs));
+  const [events, setEvents] = useState<ScheduleEvent[]>(() => (live ? [] : seedSchedule().events));
   const [eventId, setEventId] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [notify, setNotify] = useState<{ event: ScheduleEvent; moved: boolean } | null>(null);
@@ -109,7 +121,7 @@ export default function App() {
   // ---- scheduling (docs/SCHEDULING.md)
 
   const newBooking = (date: string, job?: Job) =>
-    setEditing({ draft: { ...blankEvent("appointment", date), jobId: job?.id, personIds: ["c1"] }, job, mode: "new" });
+    setEditing({ draft: { ...blankEvent("appointment", date), jobId: job?.id, personIds: contacts[0] ? [contacts[0].id] : [] }, job, mode: "new" });
 
   const scheduleLead = (lead: Lead) => {
     setOpenId(null);
@@ -144,6 +156,11 @@ export default function App() {
   const openEvent = events.find((e) => e.id === eventId) ?? null;
 
   const sendTestLead = () => {
+    // Signed in: send a real lead through this business's own form, so the email alert really fires.
+    if (live) {
+      if (account.siteKey) window.open(`/beta/form?key=${account.siteKey}`, "_blank", "noopener");
+      return;
+    }
     const base = testLeadPool[testIndex.current % testLeadPool.length]!;
     testIndex.current += 1;
     const alerted = contacts.filter((c) => c.channels.sms || c.channels.email || c.channels.call);
@@ -179,6 +196,7 @@ export default function App() {
   const newCount = leads.filter((l) => l.status === "new").length;
 
   return (
+    <AccountProvider value={account}>
     <MotionConfig reducedMotion="user">
       <div className="stage">
         <aside className="stage-intro">
@@ -190,7 +208,21 @@ export default function App() {
             Every website lead, straight to your phone — by text, email, or a phone call. Reply with one tap
             and get back to work.
           </p>
-          <p className="stage-hint">Interactive prototype. Try “Send a test lead” on the Website tab.</p>
+          {live ? (
+            <p className="stage-hint">Signed in as {account.ownerEmail}</p>
+          ) : (
+            <>
+              <p className="stage-hint">Interactive prototype. Try “Send a test lead” on the Website tab.</p>
+              <div className="stage-cta">
+                <a className="btn btn-primary" href="/signup">
+                  Create your account
+                </a>
+                <a className="btn btn-soft" href="/login">
+                  Sign in
+                </a>
+              </div>
+            </>
+          )}
         </aside>
 
         <div className="device">
@@ -241,11 +273,19 @@ export default function App() {
                 <BusinessScreen
                   test={test}
                   onTestChange={updateTest}
-                  stats={{
-                    leads: leads.length + 8,
-                    reply: "6 min",
-                    booked: leads.filter((l) => l.status === "booked").length + 4,
-                  }}
+                  stats={
+                    live
+                      ? {
+                          leads: leads.filter((l) => l.minutesAgo < 7 * 24 * 60).length,
+                          reply: "—",
+                          booked: leads.filter((l) => l.status === "booked").length,
+                        }
+                      : {
+                          leads: leads.length + 8,
+                          reply: "6 min",
+                          booked: leads.filter((l) => l.status === "booked").length + 4,
+                        }
+                  }
                 />
               )}
             </motion.main>
@@ -380,5 +420,6 @@ export default function App() {
         </div>
       </div>
     </MotionConfig>
+    </AccountProvider>
   );
 }
