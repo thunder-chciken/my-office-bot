@@ -1387,6 +1387,63 @@ a:focus-visible {
   color: #6fc3ff;
 }
 
+/* ---------- Beta test form ---------- */
+
+.beta-page {
+  min-height: 100dvh;
+  padding: 32px 16px;
+  background: var(--bg-soft);
+}
+
+.beta-card {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 28px 22px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.beta-eyebrow {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.beta-title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 6px 0 8px;
+}
+
+.beta-card .form {
+  margin-top: 20px;
+}
+
+.beta-select,
+.beta-textarea {
+  min-height: 60px;
+  padding: 14px 18px;
+  font: inherit;
+  font-size: 19px;
+  color: var(--ink);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-soft);
+}
+
+.beta-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
 /* ---------- Accessibility preferences ---------- */
 
 @media (prefers-reduced-motion: reduce) {

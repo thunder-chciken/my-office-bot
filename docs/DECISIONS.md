@@ -70,3 +70,10 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | # | Decision | Why |
 | --- | --- | --- |
 | D44 | **The beta runs on free tiers**: Vercel Hobby, Supabase Free, Resend Free, the Twilio trial (up to 5 verified phones), Cloudflare Email Routing. **Switch to Vercel Pro ($20/mo) before the first outside contractor uses it**, because Hobby is non-commercial only. Upgrade Twilio when the beta outgrows 5 phones or needs texts without the trial line (sole-proprietor 10DLC is an option before the LLC exists). Add a nightly free database export, since Supabase Free has no backups. Escalation scheduling uses pg_cron, not Vercel Cron (Hobby cron runs only once a day). | Matt's choice: spend $0 while testing, pay only when real users join. |
+
+## Beta v0.1 build (2026-10-23)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D45 | **First real capture path is a public form endpoint** `POST /api/v1/forms/{site public_key}`: plain HTML form posts, JSON and plugin webhooks. Protected by honeypot, link and hourly-volume risk scoring (quarantine, never discard), and 5-minute transport dedupe. The HMAC-signed WordPress plugin (SPEC §10.1) follows. | Gets real leads flowing from any site today; the public key is designed to sit in page HTML. |
+| D46 | **Beta alerts are email-only, dispatched inline at intake**, recorded in `notification_attempts` with Resend idempotency keys. No homeowner confirmation email yet (it would let anyone send mail to an arbitrary address until Turnstile is in). | Free-tier beta; texts and calls follow once Twilio is upgraded. |
