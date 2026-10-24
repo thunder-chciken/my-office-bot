@@ -1,8 +1,9 @@
 "use client";
 
-import { CalendarPlus, Check, Clock, FlaskConical, Mail, MapPin, MessageSquare, Navigation, Phone, Send } from "lucide-react";
-import { firstName, quickReplies, statusLabel, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
-import { useAccount } from "@/lib/account";
+import { useState } from "react";
+import { CalendarPlus, Check, Clock, FlaskConical, Mail, MapPin, MessageSquare, Navigation, Phone, Send, X } from "lucide-react";
+import { fillReply, firstName, statusLabel, timeAgo, type Lead, type LeadNote, type LeadStatus } from "@/lib/data";
+import { repliesFor, useAccount } from "@/lib/account";
 import { mailHref, mapsHref, reach, smsHref, telHref, useIsApple, type TestTarget } from "@/lib/contact";
 import { Avatar, Segmented, Sheet } from "./ui";
 import { SaveContactButton } from "./SaveContact";
@@ -14,6 +15,8 @@ type DetailProps = {
   onContact: (lead: Lead, how: ContactMethod, text?: string) => void;
   onStatus: (lead: Lead, status: LeadStatus) => void;
   onSchedule: (lead: Lead) => void;
+  onAddNote: (lead: Lead, text: string) => Promise<boolean>;
+  onDeleteNote: (lead: Lead, note: LeadNote) => void;
 };
 
 export function LeadSheet({ lead, onClose, ...props }: DetailProps & { lead: Lead | null; onClose: () => void }) {
@@ -26,11 +29,12 @@ export function LeadSheet({ lead, onClose, ...props }: DetailProps & { lead: Lea
 
 // The full lead: contact buttons, message, quick replies, status and alert history.
 // Shown in a sheet on phones and as the right-hand panel on the desktop dashboard.
-export function LeadDetail({ lead, test, onContact, onStatus, onSchedule }: DetailProps & { lead: Lead }) {
+export function LeadDetail({ lead, test, onContact, onStatus, onSchedule, onAddNote, onDeleteNote }: DetailProps & { lead: Lead }) {
   const apple = useIsApple();
   const account = useAccount();
   const to = reach(lead, test);
   const testing = !!(test.phone.trim() || test.email.trim());
+  const replies = repliesFor(account).map((r) => fillReply(r, lead.name));
 
   return (
         <>
@@ -109,14 +113,20 @@ export function LeadDetail({ lead, test, onContact, onStatus, onSchedule }: Deta
           </ul>
 
           <h4 className="sub-title">Quick text to {firstName(lead.name)}</h4>
-          <div className="stack-sm">
-            {quickReplies.map((r) => (
-              <a key={r} className="reply" href={smsHref(to.phone, r)} onClick={() => onContact(lead, "text", r)}>
-                <span>{r}</span>
-                <Send size={22} strokeWidth={2.4} />
-              </a>
-            ))}
-          </div>
+          {replies.length ? (
+            <div className="stack-sm">
+              {replies.map((r, i) => (
+                <a key={i} className="reply" href={smsHref(to.phone, r)} onClick={() => onContact(lead, "text", r)}>
+                  <span>{r}</span>
+                  <Send size={22} strokeWidth={2.4} />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">Write your own quick replies under Business.</p>
+          )}
+
+          <LeadNotes key={lead.id} lead={lead} onAdd={onAddNote} onDelete={onDeleteNote} />
 
           <button className="btn btn-primary btn-block schedule-lead" onClick={() => onSchedule(lead)}>
             <CalendarPlus size={22} strokeWidth={2.5} /> Schedule a visit
@@ -146,5 +156,61 @@ export function LeadDetail({ lead, test, onContact, onStatus, onSchedule }: Deta
             ))}
           </ol>
         </>
+  );
+}
+
+// Quick notes on a lead ("left voicemail", "wants a quote by Friday"). Also shown on the customer.
+function LeadNotes({
+  lead,
+  onAdd,
+  onDelete,
+}: {
+  lead: Lead;
+  onAdd: DetailProps["onAddNote"];
+  onDelete: DetailProps["onDeleteNote"];
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const notes = lead.notes ?? [];
+
+  const add = async () => {
+    if (!text.trim()) return;
+    setBusy(true);
+    const ok = await onAdd(lead, text.trim());
+    setBusy(false);
+    if (ok) setText("");
+  };
+
+  return (
+    <>
+      <h4 className="sub-title">Notes</h4>
+      {notes.length > 0 && (
+        <ul className="note-list">
+          {notes.map((n) => (
+            <li key={n.id} className="note">
+              <p className="note-text">{n.text}</p>
+              <span className="note-time">{timeAgo(n.minutesAgo)}</span>
+              <button className="note-delete" onClick={() => onDelete(lead, n)} aria-label="Delete note">
+                <X size={18} strokeWidth={2.6} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="note-add">
+        <textarea
+          className="beta-textarea"
+          rows={2}
+          maxLength={1000}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Left a voicemail · wants a quote by Friday…"
+          aria-label={`Add a note about ${firstName(lead.name)}`}
+        />
+        <button className="btn btn-soft" disabled={!text.trim() || busy} onClick={add}>
+          {busy ? "Saving…" : "Add note"}
+        </button>
+      </div>
+    </>
   );
 }

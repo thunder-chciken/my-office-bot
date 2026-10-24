@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { LogIn, LogOut, Scale, Search, UserPlus, Zap, type LucideIcon } from "lucide-react";
-import { initials, statusLabel, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
+import { initials, statusLabel, timeAgo, type Lead, type LeadNote, type LeadStatus } from "@/lib/data";
 import { useAccount } from "@/lib/account";
 import { browserClient } from "@/lib/supabase/client";
 import { LeadDetail, type ContactMethod } from "./LeadSheet";
@@ -107,6 +107,8 @@ export function LeadsDesk({
   onContact,
   onStatus,
   onSchedule,
+  onAddNote,
+  onDeleteNote,
 }: {
   leads: Lead[];
   selectedId: string | null;
@@ -115,6 +117,8 @@ export function LeadsDesk({
   onContact: (lead: Lead, how: ContactMethod, text?: string) => void;
   onStatus: (lead: Lead, status: LeadStatus) => void;
   onSchedule: (lead: Lead) => void;
+  onAddNote: (lead: Lead, text: string) => Promise<boolean>;
+  onDeleteNote: (lead: Lead, note: LeadNote) => void;
 }) {
   const account = useAccount();
   const [filter, setFilter] = useState<Filter>("all");
@@ -188,7 +192,15 @@ export function LeadsDesk({
       <section className="desk-detail" aria-label="Lead details">
         {selected ? (
           <div className="desk-detail-inner">
-            <LeadDetail lead={selected} test={test} onContact={onContact} onStatus={onStatus} onSchedule={onSchedule} />
+            <LeadDetail
+              lead={selected}
+              test={test}
+              onContact={onContact}
+              onStatus={onStatus}
+              onSchedule={onSchedule}
+              onAddNote={onAddNote}
+              onDeleteNote={onDeleteNote}
+            />
           </div>
         ) : (
           <div className="desk-empty">

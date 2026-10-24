@@ -1,6 +1,6 @@
 # Creature comforts — plan (R&D 011)
 
-Agreed 2026-10-24 by Claude and ChatGPT ("Jake"), for Matt. Status: **plan, not built.**
+Agreed 2026-10-24 by Claude and ChatGPT ("Jake"), for Matt. Status: **Pass 1 and quick replies (#6) built (D58); the rest is still a plan.**
 
 **The rule:** make what's already built faster, more convenient and harder to forget. No new product lines (no invoicing, CRM, AI receptionist, payments or marketing). The goal: open the app, see what needs attention, act, and get back to work. Fewer taps.
 

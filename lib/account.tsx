@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { business } from "./data";
+import { builtInReplies, business } from "./data";
 
 // Who the app is showing: the signed-in business, or the demo business on the public prototype.
 export type Account = {
@@ -21,7 +21,11 @@ export type Account = {
   pluginCode: string | null;
   pluginLastSeen: string | null;
   pluginSiteUrl: string | null;
+  /** Quick text replies (D58): the business's own, or null for the built-in set. */
+  quickReplies: string[] | null;
 };
+
+export const repliesFor = (a: Account) => a.quickReplies ?? builtInReplies;
 
 export const demoAccount: Account = {
   live: false,
@@ -38,6 +42,7 @@ export const demoAccount: Account = {
   pluginCode: null,
   pluginLastSeen: null,
   pluginSiteUrl: null,
+  quickReplies: null,
 };
 
 const AccountContext = createContext<Account>(demoAccount);

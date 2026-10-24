@@ -3174,6 +3174,159 @@ a.row-btn {
   color: var(--red);
 }
 
+/* ---------- Quick replies, lead notes, recently viewed (D58) ---------- */
+
+.replies-form .beta-textarea,
+.note-add .beta-textarea {
+  width: 100%;
+  min-height: 0;
+  resize: vertical;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.reply-edit-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reply-edit {
+  display: grid;
+  gap: 8px;
+}
+
+.reply-preview {
+  font-size: 15px;
+  color: var(--blue-ink);
+}
+
+.reply-edit-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.reply-edit-tools .icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+.reply-count {
+  margin-right: auto;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+}
+
+.icon-btn.is-danger {
+  background: var(--red-50);
+  color: var(--red);
+}
+
+.reply-reset {
+  justify-self: center;
+}
+
+.note-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  padding: 12px 14px;
+  background: #fff8e6;
+  border: 1px solid #f3e2b3;
+  border-radius: 16px;
+}
+
+.note-text {
+  font-size: 17px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.note-time {
+  grid-column: 1;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.note-delete {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-3);
+}
+
+.note-delete:active {
+  background: #f3e2b3;
+}
+
+.note-add {
+  display: grid;
+  gap: 10px;
+}
+
+.recent-cust {
+  margin-top: 16px;
+}
+
+.recent-label {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.recent-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.recent-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  max-width: 200px;
+  padding: 6px 14px 6px 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.recent-chip:active {
+  background: var(--blue-50);
+}
+
 /* ---------- Compare page (/compare) ---------- */
 
 .cmp-page {

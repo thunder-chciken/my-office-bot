@@ -14,11 +14,14 @@ import { Avatar, Header, Sheet } from "./ui";
 export function CustomersScreen({
   customers,
   leads,
+  recentIds,
   onOpen,
   onAdd,
 }: {
   customers: Customer[];
   leads: Lead[];
+  /** Last customers opened on this device, newest first (D58). */
+  recentIds: string[];
   onOpen: (id: string) => void;
   onAdd: () => void;
 }) {
@@ -33,6 +36,7 @@ export function CustomersScreen({
         (digits.length >= 3 && c.phone.replace(/\D/g, "").includes(digits)),
     )
     .sort(byName);
+  const recent = q ? [] : recentIds.map((id) => customers.find((c) => c.id === id)).filter((c): c is Customer => !!c);
   const lastLead = (c: Customer) =>
     leads.filter((l) => c.leadIds.includes(l.id)).sort((a, b) => a.minutesAgo - b.minutesAgo)[0];
 
@@ -52,6 +56,20 @@ export function CustomersScreen({
         <Search size={20} />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, phone, address…" />
       </label>
+
+      {recent.length > 0 && (
+        <section className="recent-cust" aria-label="Recently viewed">
+          <p className="recent-label">Recently viewed</p>
+          <div className="recent-row">
+            {recent.map((c) => (
+              <button key={c.id} className="recent-chip" onClick={() => onOpen(c.id)}>
+                <Avatar name={c.name} size={36} />
+                <span className="truncate">{c.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="stack">
         <AnimatePresence initial={false} mode="popLayout">
@@ -116,6 +134,10 @@ export function CustomerSheet({
   const phone = test.phone.trim() || c?.phone || "";
   const email = test.email.trim() || c?.email || "";
   const history = c ? leads.filter((l) => c.leadIds.includes(l.id)).sort((a, b) => a.minutesAgo - b.minutesAgo) : [];
+  // Notes written on this customer's leads, newest first.
+  const leadNotes = history
+    .flatMap((l) => (l.notes ?? []).map((n) => ({ ...n, service: l.service })))
+    .sort((a, b) => a.minutesAgo - b.minutesAgo);
 
   return (
     <Sheet
@@ -180,6 +202,22 @@ export function CustomerSheet({
               <p className="bubble-label">Notes</p>
               <p className="bubble-text">{c.notes}</p>
             </div>
+          )}
+
+          {leadNotes.length > 0 && (
+            <>
+              <h4 className="sub-title">Notes from their leads</h4>
+              <ul className="note-list">
+                {leadNotes.map((n) => (
+                  <li key={n.id} className="note">
+                    <p className="note-text">{n.text}</p>
+                    <span className="note-time">
+                      {n.service} · {timeAgo(n.minutesAgo)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
 
           <h4 className="sub-title">Leads</h4>

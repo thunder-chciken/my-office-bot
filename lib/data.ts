@@ -10,6 +10,13 @@ export type AlertEvent = {
   ok: boolean;
 };
 
+/** A quick note on a lead ("left voicemail"), oldest first (D58). */
+export type LeadNote = {
+  id: string;
+  text: string;
+  minutesAgo: number;
+};
+
 export type Lead = {
   id: string;
   name: string;
@@ -23,6 +30,7 @@ export type Lead = {
   source: string;
   urgent?: boolean;
   alerts: AlertEvent[];
+  notes?: LeadNote[];
 };
 
 export type Contact = {
@@ -119,6 +127,7 @@ export const seedLeads: Lead[] = [
       { minutesAgo: 190, text: "Texted Matt", ok: true },
       { minutesAgo: 182, text: "You texted Tom back", ok: true },
     ],
+    notes: [{ id: "n1", text: "Wants a quote by Friday. Tile is in his garage.", minutesAgo: 180 }],
   },
   {
     id: "l5",
@@ -188,12 +197,18 @@ export const seedRules: Rules = {
   emergencyCall: true,
 };
 
-export const quickReplies = [
-  "Thanks for reaching out! I'll call you within the hour.",
+// Quick text replies (D58): a business can write up to 10 of its own; these are the starting set.
+// {name} becomes the customer's first name when the reply is used.
+export const builtInReplies = [
+  "Hi {name}, thanks for reaching out! I'll call you within the hour.",
   "I can come take a look tomorrow. What time works for you?",
   "Can you text me a few photos of the problem?",
   "I'm on a job right now — I'll call you this afternoon.",
 ];
+export const MAX_REPLIES = 10;
+export const MAX_REPLY_LENGTH = 320;
+
+export const fillReply = (text: string, name: string) => text.replace(/\{name\}/gi, firstName(name));
 
 // Leads used by "Send a test lead" so the demo always has something fresh.
 export const testLeadPool: Omit<Lead, "id" | "minutesAgo" | "status" | "alerts">[] = [

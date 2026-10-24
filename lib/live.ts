@@ -43,6 +43,23 @@ export async function removeContact(id: string): Promise<Result> {
   return { error: message(error) };
 }
 
+// Null puts the built-in replies back (0011).
+export async function saveQuickReplies(replies: string[] | null): Promise<Result & { replies?: string[] | null }> {
+  const { data, error } = await browserClient().rpc("save_quick_replies", { p_replies: replies });
+  return { replies: (data as string[] | null) ?? null, error: message(error) };
+}
+
+export async function addLeadNote(leadId: string, body: string): Promise<Result & { id?: string; createdAt?: string }> {
+  const { data, error } = await browserClient().rpc("add_lead_note", { p_lead: leadId, p_body: body });
+  const note = data as { id?: string; created_at?: string } | null;
+  return { id: note?.id, createdAt: note?.created_at, error: message(error) };
+}
+
+export async function deleteLeadNote(id: string): Promise<Result> {
+  const { error } = await browserClient().rpc("delete_lead_note", { p_id: id });
+  return { error: message(error) };
+}
+
 export async function saveLeadStatus(id: string, status: LeadStatus): Promise<Result> {
   const { error } = await browserClient().rpc("set_lead_status", { p_lead: id, p_status: status });
   return { error: message(error) };

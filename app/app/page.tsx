@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import App from "@/components/App";
 import { AuthShell } from "@/components/auth/AuthForms";
 import type { Account } from "@/lib/account";
-import type { Customer } from "@/lib/customers";
 import type { Crew, Job, ScheduleEvent } from "@/lib/schedule";
-import type { AlertEvent, Contact, Lead, LeadStatus } from "@/lib/data";
+import type { Contact } from "@/lib/data";
+import { CUSTOMER_SELECT, LEAD_SELECT, customerFromRow, leadFromRow, type CustomerRow, type LeadRow } from "@/lib/rows";
 import { serverClient } from "@/lib/supabase/server";
 
 // The signed-in app: same screens as the demo, filled with this business's real leads and people.
@@ -13,32 +13,6 @@ import { serverClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "My Office Bot" };
 export const dynamic = "force-dynamic";
-
-type LeadRow = {
-  id: string;
-  name: string | null;
-  phone: string | null;
-  email: string | null;
-  service: string | null;
-  message: string | null;
-  address: string | null;
-  urgency: string;
-  state: string;
-  received_at: string;
-  channel: string;
-  extra: { builder?: string; form?: string } | null;
-  lead_events: { type: string; data: Record<string, unknown> | null; created_at: string }[];
-};
-
-const statusFor: Record<string, LeadStatus> = { contacted: "contacted", closed: "booked" };
-const builderNames: Record<string, string> = {
-  bricks: "Bricks",
-  divi: "Divi",
-  cf7: "Contact Form 7",
-  wpforms: "WPForms",
-  gravity: "Gravity Forms",
-  elementor: "Elementor",
-};
 
 export default async function AppPage() {
   const supabase = await serverClient();
@@ -49,7 +23,7 @@ export default async function AppPage() {
 
   const { data: membership } = await supabase
     .from("memberships")
-    .select("account_id, accounts(name, phone, city, timezone, trades, billing_status, sms_status)")
+    .select("account_id, accounts(name, phone, city, timezone, trades, billing_status, sms_status, quick_replies)")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!membership) redirect("/onboarding");
@@ -66,7 +40,7 @@ export default async function AppPage() {
   ] = await Promise.all([
     supabase
       .from("leads")
-      .select("id, name, phone, email, service, message, address, urgency, state, received_at, channel, extra, lead_events(type, data, created_at)")
+      .select(LEAD_SELECT)
       .eq("account_id", accountId)
       .in("risk_status", ["ok", "released"])
       .order("received_at", { ascending: false })
@@ -80,7 +54,7 @@ export default async function AppPage() {
     supabase.from("sites").select("domain, public_key, plugin_secret, plugin_last_seen_at, plugin_site_url").eq("account_id", accountId).order("created_at").limit(1).maybeSingle(),
     supabase
       .from("customers")
-      .select("id, name, phone, email, address, notes, source, created_at, leads(id)")
+      .select(CUSTOMER_SELECT)
       .eq("account_id", accountId)
       .order("name")
       .limit(5000),
@@ -96,7 +70,6 @@ export default async function AppPage() {
   ]);
 
   const now = Date.now();
-  const minutesAgo = (iso: string) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
   const contacts: Contact[] = (contactRows ?? []).map((c) => {
     const agreedFor = (c.consent_evidence as { phone?: string } | null)?.phone;
     const sms: Contact["sms"] = c.phone_opted_out
@@ -120,57 +93,19 @@ export default async function AppPage() {
   });
   const nameForEmail = (to: unknown) => contacts.find((c) => c.email && c.email === to)?.name ?? String(to ?? "");
 
-  const leads: Lead[] = ((leadRows ?? []) as LeadRow[]).map((l) => ({
-    id: l.id,
-    name: l.name || "Website visitor",
-    service: l.service || "Website lead",
-    message: l.message || "",
-    phone: l.phone ?? "",
-    email: l.email ?? "",
-    address: l.address ?? "",
-    minutesAgo: minutesAgo(l.received_at),
-    status: statusFor[l.state] ?? "new",
-    // Plugin leads say which builder and form they came from (D57).
-    source:
-      l.channel === "plugin" && l.extra?.builder
-        ? [builderNames[l.extra.builder] ?? l.extra.builder, l.extra.form].filter(Boolean).join(" · ")
-        : "Website form",
-    urgent: l.urgency === "urgent",
-    alerts: [...l.lead_events]
-      .sort((a, b) => a.created_at.localeCompare(b.created_at))
-      .flatMap((e): AlertEvent[] => {
-        const at = minutesAgo(e.created_at);
-        if (e.type === "alert_sent" && e.data?.channel === "sms") return [{ minutesAgo: at, text: `Texted ${String(e.data?.name ?? "")}`, ok: true }];
-        if (e.type === "alert_sent") return [{ minutesAgo: at, text: `Emailed ${nameForEmail(e.data?.to)}`, ok: true }];
-        if (e.type === "alert_failed")
-          return [{ minutesAgo: at, text: e.data?.channel === "sms" ? `Text to ${String(e.data?.name ?? "")} didn't go through` : "Email alert didn't go through", ok: false }];
-        return [];
-      }),
-  }));
+  const leads = ((leadRows ?? []) as LeadRow[]).map((l) => leadFromRow(l, nameForEmail, now));
 
-  type AccountRow = { name: string; phone: string | null; city: string | null; timezone: string; trades: string[]; billing_status: string; sms_status: string };
-  type CustomerRow = {
-    id: string;
+  type AccountRow = {
     name: string;
     phone: string | null;
-    email: string | null;
-    address: string | null;
-    notes: string | null;
-    source: "lead" | "manual";
-    created_at: string;
-    leads: { id: string }[];
+    city: string | null;
+    timezone: string;
+    trades: string[];
+    billing_status: string;
+    sms_status: string;
+    quick_replies: string[] | null;
   };
-  const customers: Customer[] = ((customerRows ?? []) as CustomerRow[]).map((c) => ({
-    id: c.id,
-    name: c.name || "Website visitor",
-    phone: c.phone ?? "",
-    email: c.email ?? "",
-    address: c.address ?? "",
-    notes: c.notes ?? "",
-    source: c.source,
-    createdMinutesAgo: minutesAgo(c.created_at),
-    leadIds: c.leads.map((l) => l.id),
-  }));
+  const customers = ((customerRows ?? []) as CustomerRow[]).map((c) => customerFromRow(c, now));
 
   type EventRow = {
     id: string;
@@ -256,6 +191,7 @@ export default async function AppPage() {
     pluginCode: site?.public_key && site?.plugin_secret ? `MOB1.${site.public_key}.${site.plugin_secret}` : null,
     pluginLastSeen: site?.plugin_last_seen_at ?? null,
     pluginSiteUrl: site?.plugin_site_url ?? null,
+    quickReplies: row?.quick_replies ?? null,
   };
 
   return (

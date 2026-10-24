@@ -13,6 +13,7 @@ import {
   LifeBuoy,
   LogIn,
   LogOut,
+  MessageSquareText,
   Pencil,
   Scale,
   UserPlus,
@@ -20,11 +21,12 @@ import {
   Zap,
 } from "lucide-react";
 import { initials } from "@/lib/data";
-import { useAccount, useLayout, type Account } from "@/lib/account";
+import { repliesFor, useAccount, useLayout, type Account } from "@/lib/account";
 import type { TestTarget } from "@/lib/contact";
 import { timezones } from "@/lib/live";
 import { browserClient } from "@/lib/supabase/client";
 import { Header, SectionTitle, Sheet } from "./ui";
+import { QuickRepliesForm } from "./QuickReplies";
 
 const tradeList = [
   { name: "Roofing", Icon: Home },
@@ -40,17 +42,21 @@ export function BusinessScreen({
   test,
   onTestChange,
   onSaveProfile,
+  onSaveReplies,
   onOpenWebsite,
 }: {
   stats: { leads: number; reply: string; booked: number };
   test: TestTarget;
   onTestChange: (t: TestTarget) => void;
   onSaveProfile: (next: Account) => Promise<boolean>;
+  onSaveReplies: (replies: string[] | null) => Promise<boolean>;
   onOpenWebsite: () => void;
 }) {
   const account = useAccount();
   const desktop = useLayout() === "desktop";
   const [editing, setEditing] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const replyCount = repliesFor(account).length;
 
   const signOut = async () => {
     await browserClient().auth.signOut();
@@ -131,6 +137,22 @@ export function BusinessScreen({
           );
         })}
       </div>
+
+      <SectionTitle>Quick text replies</SectionTitle>
+      <ul className="card list">
+        <li>
+          <button className="row row-btn" onClick={() => setReplying(true)}>
+            <MessageSquareText size={22} className="row-icon" />
+            <span className="row-text">
+              <span>Your quick replies</span>
+              <span className="muted">
+                {account.quickReplies === null ? "Using the built-in replies · tap to write your own" : `${replyCount} of 10 written by you`}
+              </span>
+            </span>
+            <ChevronRight size={22} className="chev" />
+          </button>
+        </li>
+      </ul>
 
       <SectionTitle>Test on your phone</SectionTitle>
       <div className="card pad form">
@@ -225,6 +247,18 @@ export function BusinessScreen({
             onSave={async (next) => {
               const ok = await onSaveProfile(next);
               if (ok) setEditing(false);
+              return ok;
+            }}
+          />
+        )}
+      </Sheet>
+
+      <Sheet open={replying} onClose={() => setReplying(false)} title="Quick text replies">
+        {replying && (
+          <QuickRepliesForm
+            onSave={async (replies) => {
+              const ok = await onSaveReplies(replies);
+              if (ok && replies !== null) setReplying(false);
               return ok;
             }}
           />

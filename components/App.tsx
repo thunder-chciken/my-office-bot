@@ -12,11 +12,14 @@ import {
   timeAgo,
   type Contact,
   type Lead,
+  type LeadNote,
   type LeadStatus,
 } from "@/lib/data";
 import { AccountProvider, LayoutProvider, demoAccount, type Account } from "@/lib/account";
 import {
+  addLeadNote,
   deleteCustomer,
+  deleteLeadNote,
   removeContact,
   saveBooking,
   saveBusiness,
@@ -24,7 +27,10 @@ import {
   saveCustomer,
   saveEventStatus,
   saveLeadStatus,
+  saveQuickReplies,
 } from "@/lib/live";
+import { CUSTOMER_SELECT, LEAD_SELECT, customerFromRow, leadFromRow, type CustomerRow, type LeadRow } from "@/lib/rows";
+import { browserClient } from "@/lib/supabase/client";
 import { attachLead, blankCustomer, customersFromLeads, type Customer } from "@/lib/customers";
 import { useWide } from "@/lib/useWide";
 import { turnOffTexts, turnOnTexts } from "@/app/app/actions";
@@ -114,7 +120,98 @@ export default function App({
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [notify, setNotify] = useState<{ event: ScheduleEvent; moved: boolean } | null>(null);
 
+  const showToast = useCallback((text: string, error = false) => {
+    clearTimeout(toastTimer.current);
+    setToast({ text, error });
+    toastTimer.current = setTimeout(() => setToast(null), error ? 4200 : 2400);
+  }, []);
+
   useEffect(() => setTest(loadTestTarget()), []);
+
+  // ---- recently viewed customers (D58): the last 5 opened, kept on this device only.
+  const recentKey = `mob:recent-customers:${account.siteKey ?? "demo"}`;
+  const [recentCustomerIds, setRecentCustomerIds] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      setRecentCustomerIds(JSON.parse(localStorage.getItem(recentKey) ?? "[]"));
+    } catch {}
+  }, [recentKey]);
+  useEffect(() => {
+    if (!customerId) return;
+    setRecentCustomerIds((ids) => {
+      const next = [customerId, ...ids.filter((x) => x !== customerId)].slice(0, 5);
+      try {
+        localStorage.setItem(recentKey, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, [customerId, recentKey]);
+
+  // ---- live refresh (D58): new leads show up without a reload, when the app comes back on screen
+  // and every 30 seconds while it's open. Paused in the background, and never two checks at once.
+  const leadsRef = useRef(leads);
+  leadsRef.current = leads;
+  const contactsRef = useRef(contacts);
+  contactsRef.current = contacts;
+  const refreshing = useRef(false);
+  const lastRefresh = useRef(0);
+
+  const refresh = useCallback(async () => {
+    if (!live || refreshing.current || document.visibilityState !== "visible") return;
+    if (Date.now() - lastRefresh.current < 5000) return;
+    refreshing.current = true;
+    lastRefresh.current = Date.now();
+    try {
+      const supabase = browserClient();
+      const { data, error } = await supabase
+        .from("leads")
+        .select(LEAD_SELECT)
+        .in("risk_status", ["ok", "released"])
+        .order("received_at", { ascending: false })
+        .limit(100);
+      if (error || !data) return;
+      const nameForEmail = (to: unknown) => contactsRef.current.find((c) => c.email && c.email === to)?.name ?? String(to ?? "");
+      const fresh = (data as unknown as LeadRow[]).map((r) => leadFromRow(r, nameForEmail));
+      const have = new Set(leadsRef.current.map((l) => l.id));
+      const added = fresh.filter((l) => !have.has(l.id));
+      const byId = new Map(fresh.map((l) => [l.id, l]));
+      // Existing leads keep this screen's history; the database has the say on status, notes and age.
+      setLeads((ls) => {
+        const kept = ls.map((l) => {
+          const f = byId.get(l.id);
+          return f ? { ...l, minutesAgo: f.minutesAgo, status: f.status, notes: f.notes } : l;
+        });
+        const ids = new Set(kept.map((l) => l.id));
+        return [...added.filter((l) => !ids.has(l.id)), ...kept];
+      });
+      if (added.length) {
+        const { data: rows } = await supabase.from("customers").select(CUSTOMER_SELECT).order("name").limit(5000);
+        if (rows) setCustomers((rows as unknown as CustomerRow[]).map((c) => customerFromRow(c)));
+        clearTimeout(bannerTimer.current);
+        setBanner(added[0]!);
+        bannerTimer.current = setTimeout(() => setBanner(null), 6000);
+        showToast(added.length === 1 ? `New lead from ${firstName(added[0]!.name)}` : `${added.length} new leads`);
+      }
+    } finally {
+      refreshing.current = false;
+    }
+  }, [live, showToast]);
+
+  useEffect(() => {
+    if (!live) return;
+    lastRefresh.current = Date.now();
+    const onShow = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const timer = setInterval(() => void refresh(), 30000);
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("focus", onShow);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onShow);
+      window.removeEventListener("focus", onShow);
+    };
+  }, [live, refresh]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -181,18 +278,27 @@ export default function App({
     saveTestTarget(t);
   };
 
-  const showToast = useCallback((text: string, error = false) => {
-    clearTimeout(toastTimer.current);
-    setToast({ text, error });
-    toastTimer.current = setTimeout(() => setToast(null), error ? 4200 : 2400);
-  }, []);
-
   // ---- saving (signed-in accounts only; the demo just updates the screen)
 
   const persistStatus = async (id: string, status: LeadStatus) => {
     if (!live) return;
     const { error } = await saveLeadStatus(id, status);
     if (error) showToast(error, true);
+  };
+
+  const saveReplies = async (replies: string[] | null) => {
+    let saved = replies;
+    if (live) {
+      const { replies: stored, error } = await saveQuickReplies(replies);
+      if (error) {
+        showToast(error, true);
+        return false;
+      }
+      saved = stored ?? null;
+    }
+    setAccount((a) => ({ ...a, quickReplies: saved }));
+    showToast(replies === null ? "Back to the built-in replies" : "Quick replies saved");
+    return true;
   };
 
   const saveProfile = async (next: Account) => {
@@ -264,6 +370,31 @@ export default function App({
       status: l.status === "new" ? "contacted" : l.status,
       alerts: [...l.alerts, { minutesAgo: 0, text: `You ${verb} ${name}`, ok: true }],
     }));
+  };
+
+  // ---- lead notes (D58)
+
+  const addNote = async (lead: Lead, text: string) => {
+    let note: LeadNote = { id: `n-${Date.now()}`, text, minutesAgo: 0 };
+    if (live) {
+      const { id, error } = await addLeadNote(lead.id, text);
+      if (error || !id) {
+        showToast(error ?? "Couldn't save the note", true);
+        return false;
+      }
+      note = { ...note, id };
+    }
+    patchLead(lead.id, (l) => ({ ...l, notes: [...(l.notes ?? []), note] }));
+    return true;
+  };
+
+  const deleteNote = async (lead: Lead, note: LeadNote) => {
+    if (live) {
+      const { error } = await deleteLeadNote(note.id);
+      if (error) return showToast(error, true);
+    }
+    patchLead(lead.id, (l) => ({ ...l, notes: (l.notes ?? []).filter((n) => n.id !== note.id) }));
+    showToast("Note deleted");
   };
 
   const setStatus = (lead: Lead, status: LeadStatus) => {
@@ -402,7 +533,15 @@ export default function App({
           />
         );
       case "customers":
-        return <CustomersScreen customers={customers} leads={leads} onOpen={setCustomerId} onAdd={() => setCustomerDraft(blankCustomer())} />;
+        return (
+          <CustomersScreen
+            customers={customers}
+            leads={leads}
+            recentIds={recentCustomerIds}
+            onOpen={setCustomerId}
+            onAdd={() => setCustomerDraft(blankCustomer())}
+          />
+        );
       case "website":
         return <WebsiteScreen onCopy={copy} onTestLead={sendTestLead} />;
       case "business":
@@ -411,6 +550,7 @@ export default function App({
             test={test}
             onTestChange={updateTest}
             onSaveProfile={saveProfile}
+            onSaveReplies={saveReplies}
             onOpenWebsite={() => setTab("website")}
             stats={
               live
@@ -441,6 +581,8 @@ export default function App({
           onContact={contactLead}
           onStatus={setStatus}
           onSchedule={scheduleLead}
+          onAddNote={addNote}
+          onDeleteNote={deleteNote}
         />
       )}
 
@@ -545,6 +687,8 @@ export default function App({
                   onContact={contactLead}
                   onStatus={setStatus}
                   onSchedule={scheduleLead}
+                  onAddNote={addNote}
+                  onDeleteNote={deleteNote}
                 />
               ) : (
                 <DeskPage key={tab}>{screenFor(tab)}</DeskPage>
