@@ -77,3 +77,10 @@ Agreed between Claude and ChatGPT in R&D rounds 001–004 on 2026-10-23, with Ma
 | --- | --- | --- |
 | D45 | **First real capture path is a public form endpoint** `POST /api/v1/forms/{site public_key}`: plain HTML form posts, JSON and plugin webhooks. Protected by honeypot, link and hourly-volume risk scoring (quarantine, never discard), and 5-minute transport dedupe. The HMAC-signed WordPress plugin (SPEC §10.1) follows. | Gets real leads flowing from any site today; the public key is designed to sit in page HTML. |
 | D46 | **Beta alerts are email-only, dispatched inline at intake**, recorded in `notification_attempts` with Resend idempotency keys. No homeowner confirmation email yet (it would let anyone send mail to an arbitrary address until Turnstile is in). | Free-tier beta; texts and calls follow once Twilio is upgraded. |
+| D47 | **The schema grants table access to `service_role` explicitly** (`0002_service_role_grants.sql`). | New Supabase projects no longer auto-grant new public tables to the API roles; the first live lead failed with "permission denied" until this ran. |
+
+## Scheduling calendar (2026-10-23, R&D 010)
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D48 | **Scheduling MVP** = lead-to-appointment, crew assignment with database-checked conflicts, basic multi-day project blocks, Today/Week/List/Unscheduled views, staff email reminders, manual reschedule with a notify preview. **V2** = homeowner booking link, read-only .ics feed, one-tap "next workday", drag-and-drop. **Later** = two-way Google sync, weather suggestions, dispatch. Plan in `docs/SCHEDULING.md`. | Contractors need both where they're going and where crews are committed; sync and self-booking add complexity before demand is proven. Keep it an extension of the lead inbox. |
