@@ -583,6 +583,9 @@ export default function App({
                   Sign in
                 </a>
               </div>
+              <a className="stage-compare" href="/compare">
+                See how we compare to Housecall Pro and Jobber →
+              </a>
             </>
           )}
         </aside>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { LogIn, LogOut, Search, UserPlus, Zap, type LucideIcon } from "lucide-react";
+import { LogIn, LogOut, Scale, Search, UserPlus, Zap, type LucideIcon } from "lucide-react";
 import { initials, statusLabel, timeAgo, type Lead, type LeadStatus } from "@/lib/data";
 import { useAccount } from "@/lib/account";
 import { browserClient } from "@/lib/supabase/client";
@@ -74,6 +74,9 @@ export function DesktopShell<T extends string>({
             </a>
             <a className="desk-link" href="/login">
               <LogIn size={20} strokeWidth={2.1} /> <span>Sign in</span>
+            </a>
+            <a className="desk-link" href="/compare">
+              <Scale size={20} strokeWidth={2.1} /> <span>How we compare</span>
             </a>
           </>
         )}

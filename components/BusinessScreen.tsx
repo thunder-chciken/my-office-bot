@@ -14,6 +14,7 @@ import {
   LogIn,
   LogOut,
   Pencil,
+  Scale,
   UserPlus,
   Wind,
   Zap,
@@ -204,6 +205,13 @@ export function BusinessScreen({
               <a className="row row-btn row-link" href="/login">
                 <LogIn size={22} className="row-icon" />
                 <span className="row-text">Sign in</span>
+                <ChevronRight size={22} className="chev" />
+              </a>
+            </li>
+            <li>
+              <a className="row row-btn row-link" href="/compare">
+                <Scale size={22} className="row-icon" />
+                <span className="row-text">How we compare</span>
                 <ChevronRight size={22} className="chev" />
               </a>
             </li>

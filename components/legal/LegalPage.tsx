@@ -16,7 +16,8 @@ export function LegalPage({ title, updated, children }: { title: string; updated
         <p className="muted">Last updated {updated}</p>
         {children}
         <p className="legal-foot">
-          <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/login">Sign in</Link>
+          <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/compare">How we compare</Link> ·{" "}
+          <Link href="/login">Sign in</Link>
         </p>
       </article>
     </main>
