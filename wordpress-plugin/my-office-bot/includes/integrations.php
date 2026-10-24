@@ -17,10 +17,14 @@ class MOB_Integrations {
 		'wpforms'   => 'WPForms',
 		'gravity'   => 'Gravity Forms',
 		'elementor' => 'Elementor Pro',
+		'fluentform' => 'Fluent Forms',
 	);
 
 	/** Bricks can report one submission through two hooks; send it once. */
 	private static $bricks_done = array();
+
+	/** Fluent Forms fires its old and new hook names on some versions; send each entry once. */
+	private static $fluent_done = array();
 
 	public static function init() {
 		// Bricks: runs after every Bricks form's actions, so no change to the form is needed.
@@ -44,6 +48,10 @@ class MOB_Integrations {
 
 		// Elementor Pro forms: after a new record is accepted.
 		add_action( 'elementor_pro/forms/new_record', array( __CLASS__, 'elementor' ), 20, 2 );
+
+		// Fluent Forms: after the entry is saved (current hook name, and the older one for older versions).
+		add_action( 'fluentform/submission_inserted', array( __CLASS__, 'fluentform' ), 20, 3 );
+		add_action( 'fluentform_submission_inserted', array( __CLASS__, 'fluentform' ), 20, 3 );
 	}
 
 	// ------------------------------------------------------------------ Bricks
@@ -246,6 +254,88 @@ class MOB_Integrations {
 			);
 		} catch ( \Throwable $e ) {
 			error_log( 'My Office Bot (Elementor): ' . $e->getMessage() );
+		}
+	}
+
+	// ------------------------------------------------------------------ Fluent Forms
+
+	/** Fluent Forms element names mapped to plain field types the mapper understands. */
+	const FLUENT_TYPES = array(
+		'input_text'               => 'text',
+		'input_email'              => 'email',
+		'phone'                    => 'tel',
+		'input_mask'               => 'tel',
+		'textarea'                 => 'textarea',
+		'select'                   => 'select',
+		'multi_select'             => 'select',
+		'input_checkbox'           => 'checkbox',
+		'input_radio'              => 'radio',
+		'address'                  => 'address',
+		'input_hidden'             => 'hidden',
+		'input_password'           => 'password',
+		'input_file'               => 'file',
+		'input_image'              => 'file',
+		'custom_payment_component' => 'payment',
+		'multi_payment_component'  => 'payment',
+		'payment_method'           => 'payment',
+	);
+
+	public static function fluentform( $entry_id, $form_data = array(), $form = null ) {
+		try {
+			$entry_id = (string) $entry_id;
+			if ( isset( self::$fluent_done[ $entry_id ] ) || ! is_object( $form ) ) {
+				return;
+			}
+			self::$fluent_done[ $entry_id ] = true;
+
+			$defs   = json_decode( (string) ( $form->form_fields ?? '' ), true );
+			$fields = array();
+			self::fluent_fields( (array) ( $defs['fields'] ?? array() ), (array) $form_data, $fields );
+			MOB_Capture::submission( 'fluentform', (string) ( $form->id ?? '' ), (string) ( $form->title ?? '' ), $fields );
+		} catch ( \Throwable $e ) {
+			error_log( 'My Office Bot (Fluent Forms): ' . $e->getMessage() );
+		}
+	}
+
+	/** Walks Fluent Forms' field list; containers hold columns of fields. */
+	private static function fluent_fields( array $defs, array $data, array &$out ) {
+		foreach ( $defs as $def ) {
+			if ( ! is_array( $def ) ) {
+				continue;
+			}
+			if ( ! empty( $def['columns'] ) ) {
+				foreach ( (array) $def['columns'] as $column ) {
+					self::fluent_fields( (array) ( $column['fields'] ?? array() ), $data, $out );
+				}
+				continue;
+			}
+			$name = (string) ( $def['attributes']['name'] ?? '' );
+			if ( '' === $name ) {
+				continue;
+			}
+			$element = (string) ( $def['element'] ?? '' );
+			$label   = (string) ( $def['settings']['label'] ?? ( $def['settings']['admin_field_label'] ?? $name ) );
+			$value   = $data[ $name ] ?? '';
+
+			// The Name block posts first / middle / last parts; the middle name isn't needed.
+			if ( 'input_name' === $element ) {
+				foreach ( array( 'first_name' => 'First name', 'last_name' => 'Last name' ) as $part => $part_label ) {
+					$out[] = array( 'key' => $name . '.' . $part, 'label' => $part_label, 'name' => $part, 'type' => 'text', 'value' => is_array( $value ) ? ( $value[ $part ] ?? '' ) : '' );
+				}
+				continue;
+			}
+			// The Address block posts street, city, state, zip and country parts; send them as one line.
+			if ( 'address' === $element && is_array( $value ) ) {
+				$value = implode( ', ', array_filter( array_map( 'strval', array_filter( $value, 'is_scalar' ) ) ) );
+				$label = $label ? $label : 'Address';
+			}
+			$out[] = array(
+				'key'   => $name,
+				'label' => $label,
+				'name'  => $name,
+				'type'  => self::FLUENT_TYPES[ $element ] ?? (string) ( $def['attributes']['type'] ?? $element ),
+				'value' => $value,
+			);
 		}
 	}
 }

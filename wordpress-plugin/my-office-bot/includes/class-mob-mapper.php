@@ -13,6 +13,9 @@ class MOB_Mapper {
 
 	const TARGETS = array( 'name', 'first_name', 'last_name', 'phone', 'email', 'message', 'service', 'address' );
 
+	/** Choice fields (dropdowns, radios, checkboxes). Unmatched ones, like budget or timeline, are added to the message. */
+	const CHOICE = array( 'select', 'select-one', 'select-multiple', 'multiselect', 'radio', 'checkbox', 'dropdown' );
+
 	/** Field types that are never forwarded, whatever their label says. */
 	const NEVER = array( 'password', 'file', 'upload', 'fileupload', 'hidden', 'captcha', 'recaptcha', 'hcaptcha', 'turnstile', 'honeypot', 'creditcard', 'credit-card', 'stripe', 'payment', 'signature', 'html', 'divider', 'section', 'page' );
 
@@ -40,6 +43,10 @@ class MOB_Mapper {
 		}
 		if ( 'tel' === $type || 'phone' === $type || preg_match( '/\b(phone|mobile|cell|tel|telephone|number to reach|call you)\b/', $text ) ) {
 			return 'phone';
+		}
+		// A big text box is the message, even when its label mentions the project or service.
+		if ( 'textarea' === $type ) {
+			return 'message';
 		}
 		if ( preg_match( '/\bfirst\b/', $text ) && preg_match( '/\bname\b/', $text ) ) {
 			return 'first_name';
@@ -70,16 +77,15 @@ class MOB_Mapper {
 	 * @return array Target => value (strings only).
 	 */
 	public static function map( array $fields, array $override = array() ) {
-		$out = array();
+		$out    = array();
+		$extras = array();
 		foreach ( $fields as $f ) {
-			$key = (string) ( $f['key'] ?? '' );
-			if ( array_key_exists( $key, $override ) ) {
+			$key        = (string) ( $f['key'] ?? '' );
+			$overridden = array_key_exists( $key, $override );
+			if ( $overridden ) {
 				$target = $override[ $key ] ? $override[ $key ] : null;
 			} else {
 				$target = self::guess( $f['label'] ?? '', $f['name'] ?? $key, $f['type'] ?? '' );
-			}
-			if ( ! $target || ! in_array( $target, self::TARGETS, true ) ) {
-				continue;
 			}
 			$value = $f['value'] ?? '';
 			if ( is_array( $value ) ) {
@@ -89,12 +95,35 @@ class MOB_Mapper {
 			if ( '' === $value ) {
 				continue;
 			}
-			// The first field wins, except the message, which joins all message-like fields.
+			if ( ! $target || ! in_array( $target, self::TARGETS, true ) ) {
+				// A multiple-choice answer with no contact meaning (budget, timeline, "how did you hear about us")
+				// rides along in the message, labelled. Free-text fields never do.
+				if ( ! $overridden && in_array( strtolower( (string) ( $f['type'] ?? '' ) ), self::CHOICE, true ) ) {
+					$label = trim( (string) preg_replace( '/^[^\p{L}\p{N}]+/u', '', wp_strip_all_tags( (string) ( $f['label'] ?? '' ) ) ) );
+					if ( '' !== $label ) {
+						$extras[] = $label . ': ' . $value;
+					}
+				}
+				continue;
+			}
+			// The message joins every message-like field; address parts and services are joined too
+			// (street + city, primary + additional services). Anything else: the first field wins.
 			if ( 'message' === $target && isset( $out['message'] ) ) {
 				$out['message'] .= "\n" . $value;
+			} elseif ( in_array( $target, array( 'address', 'service' ), true ) && isset( $out[ $target ] ) ) {
+				$have = array_map( 'strtolower', explode( ', ', $out[ $target ] ) );
+				foreach ( explode( ', ', $value ) as $part ) {
+					if ( '' !== $part && ! in_array( strtolower( $part ), $have, true ) ) {
+						$out[ $target ] .= ', ' . $part;
+						$have[]          = strtolower( $part );
+					}
+				}
 			} elseif ( ! isset( $out[ $target ] ) ) {
 				$out[ $target ] = $value;
 			}
+		}
+		if ( $extras ) {
+			$out['message'] = trim( ( $out['message'] ?? '' ) . "\n\n" . implode( "\n", array_slice( $extras, 0, 12 ) ) );
 		}
 		foreach ( $out as $k => $v ) {
 			$out[ $k ] = mb_substr( $v, 0, 'message' === $k ? 4000 : 300 );

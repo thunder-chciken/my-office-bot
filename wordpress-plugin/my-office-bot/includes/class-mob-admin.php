@@ -161,6 +161,7 @@ class MOB_Admin {
 			'wpforms'   => function_exists( 'wpforms' ),
 			'gravity'   => class_exists( 'GFForms' ),
 			'elementor' => defined( 'ELEMENTOR_PRO_VERSION' ),
+			'fluentform' => defined( 'FLUENTFORM' ) || defined( 'FLUENTFORM_VERSION' ),
 		);
 	}
 
@@ -308,7 +309,7 @@ class MOB_Admin {
 			<?php endif; ?>
 
 			<h2><?php esc_html_e( 'Privacy', 'my-office-bot' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Only the name, phone, email, address, service and message fields are sent, never passwords, payment details or uploaded files. Suggested wording for your privacy policy has been added under Settings > Privacy > Policy guide.', 'my-office-bot' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Only the name, phone, email, address, service and message fields are sent, plus answers to multiple-choice questions (like budget or start date) added to the message. Never passwords, payment details or uploaded files. Suggested wording for your privacy policy has been added under Settings > Privacy > Policy guide.', 'my-office-bot' ); ?></p>
 		</div>
 		<?php
 	}

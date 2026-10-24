@@ -4,18 +4,18 @@ Tags: leads, contact form, bricks, divi, notifications
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPLv2 or later
 
 Sends your existing website form submissions to My Office Bot, so new leads reach your phone in seconds. Your forms stay exactly as they are.
 
 == Description ==
 
-Works with the forms you already have: Bricks, Divi, Contact Form 7, WPForms, Gravity Forms and Elementor Pro. No new form to build.
+Works with the forms you already have: Bricks, Divi, Contact Form 7, WPForms, Gravity Forms, Elementor Pro and Fluent Forms. No new form to build.
 
 * Only successful submissions are sent, after the form's own checks pass.
 * Your form's emails, thank-you message and design don't change.
-* Only the name, phone, email, address, service and message fields are sent. Never passwords, payment details or uploaded files.
+* Only the name, phone, email, address, service and message fields are sent, plus answers to multiple-choice questions (like budget or start date), added to the message. Never passwords, payment details or uploaded files.
 * If My Office Bot can't be reached, leads wait in a queue on your site and are retried automatically.
 
 Optional chat bubble: a "Get a quote" button in the corner of every page that opens a short form (name, phone number and what the visitor needs). Pick your brand color, an icon or your logo, the wording and the corner under Settings > My Office Bot. It's off until you switch it on. A small "Powered by My Office Bot" link under the form can be switched off there too.
@@ -32,6 +32,10 @@ This plugin sends form submissions to My Office Bot (https://myofficebot.app), t
 4. Send a test from your contact form. It appears in My Office Bot and under Settings > My Office Bot > Your forms.
 
 == Changelog ==
+
+= 0.2.1 =
+* Fluent Forms support.
+* Street and city fields are combined into one address, primary and additional services into one service, and multiple-choice answers (budget, timeline, how they heard about you) are added to the message.
 
 = 0.2.0 =
 * Chat bubble: an optional "Get a quote" button with a short form, your color, icon or logo, wording and corner, and a live preview in settings.

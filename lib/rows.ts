@@ -45,6 +45,7 @@ const builderNames: Record<string, string> = {
   wpforms: "WPForms",
   gravity: "Gravity Forms",
   elementor: "Elementor",
+  fluentform: "Fluent Forms",
 };
 
 export const minutesSince = (iso: string, now = Date.now()) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
