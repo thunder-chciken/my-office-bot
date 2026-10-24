@@ -23,8 +23,9 @@ import {
   type ScheduleEvent,
 } from "@/lib/schedule";
 import { Header, Segmented } from "./ui";
+import { MonthView } from "./MonthView";
 
-type View = "day" | "week" | "list" | "todo";
+type View = "day" | "week" | "month" | "list" | "todo";
 
 export function ScheduleScreen({
   events,
@@ -74,7 +75,7 @@ export function ScheduleScreen({
         title="Schedule"
         subtitle={dayLabel(todayKey()) + " · " + parseKey(todayKey()).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
         action={
-          <button className="round-btn" onClick={() => onNew(view === "day" ? day : todayKey())} aria-label="New">
+          <button className="round-btn" onClick={() => onNew(view === "day" || view === "month" ? day : todayKey())} aria-label="New">
             <Plus size={30} strokeWidth={2.6} />
           </button>
         }
@@ -90,6 +91,7 @@ export function ScheduleScreen({
         options={[
           { value: "day", label: "Today" },
           { value: "week", label: "Week" },
+          { value: "month", label: "Month" },
           { value: "list", label: "List" },
           { value: "todo", label: "To do", count: todoCount },
         ]}
@@ -116,6 +118,19 @@ export function ScheduleScreen({
       )}
 
       {view === "week" && <WeekView day={day} setDay={setDay} live={live} card={card} />}
+
+      {view === "month" && (
+        <MonthView
+          day={day}
+          setDay={setDay}
+          live={live}
+          jobs={jobs}
+          crews={crews}
+          card={card}
+          onOpenEvent={onOpenEvent}
+          onNew={onNew}
+        />
+      )}
 
       {view === "list" && (
         <div className="stack">

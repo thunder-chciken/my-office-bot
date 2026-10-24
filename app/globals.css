@@ -535,6 +535,7 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  white-space: nowrap;
 }
 
 .seg-count {
@@ -548,6 +549,24 @@ a:focus-visible {
   font-weight: 700;
   background: var(--blue-100);
   color: var(--blue-ink);
+}
+
+/* Five options on a phone (Schedule's Today/Week/Month/List/To do): a touch smaller so they fit. */
+@media (max-width: 480px) {
+  .seg:has(> :nth-child(5)) .seg-option {
+    font-size: 15px;
+  }
+
+  .seg:has(> :nth-child(5)) .seg-label {
+    gap: 4px;
+  }
+
+  .seg:has(> :nth-child(5)) .seg-count {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    font-size: 13px;
+  }
 }
 
 .seg-option.is-active .seg-count {
@@ -2874,6 +2893,187 @@ a.row-btn {
 
 .website-link {
   margin-top: 14px;
+}
+
+/* ---------- Schedule: month calendar ---------- */
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 18px 0 12px;
+}
+
+.month-nav .strip-arrow {
+  width: 44px;
+}
+
+.month-title {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  min-width: 0;
+}
+
+.month-today {
+  margin-left: auto;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.month-wd {
+  padding: 8px 0;
+  background: var(--bg-soft);
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.month-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 66px;
+  padding: 5px 4px 6px;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: background-color 120ms ease;
+}
+
+.month-cell.is-weekend {
+  background: #fbfcfe;
+}
+
+.month-cell.is-out {
+  background: #f7f9fc;
+}
+
+.month-cell.is-out .month-num {
+  color: #b3bdca;
+}
+
+.month-cell:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--sky);
+}
+
+.month-num {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.month-cell.is-today .month-num {
+  color: var(--blue);
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px var(--blue-200);
+}
+
+.month-cell.is-picked .month-num {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: none;
+}
+
+.month-events {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+/* Phones: each booking is a thin colored bar. */
+.month-chip {
+  display: block;
+  width: 100%;
+  height: 6px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
+  background: var(--ev, var(--blue));
+  font-size: 0;
+}
+
+.month-chip.is-done {
+  opacity: 0.4;
+}
+
+.month-more {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.month .day-head {
+  margin-top: 24px;
+}
+
+/* Tablets and desktops: show what each booking is. */
+@media (min-width: 720px) {
+  .month-cell {
+    min-height: 108px;
+    padding: 6px;
+  }
+
+  .month-num {
+    align-self: flex-start;
+  }
+
+  .month-chip {
+    height: auto;
+    padding: 3px 6px;
+    border-left: 3px solid var(--ev, var(--blue));
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--ev, var(--blue)) 13%, white);
+    color: var(--ink);
+    font-size: 12.5px;
+    line-height: 1.35;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .month-chip:hover {
+    background: color-mix(in srgb, var(--ev, var(--blue)) 24%, white);
+  }
+
+  .month-chip b {
+    font-weight: 700;
+  }
+
+  .month-more {
+    padding-left: 4px;
+    font-size: 12px;
+    text-align: left;
+  }
+}
+
+/* The calendar gets more room on the desktop dashboard. */
+.desk-page:has(.month) {
+  max-width: 1120px;
 }
 
 /* ---------- Accessibility preferences ---------- */

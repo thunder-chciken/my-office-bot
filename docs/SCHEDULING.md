@@ -31,8 +31,9 @@ A calendar that only handles appointments solves half the problem, so both are i
 - **Views:**
   - Today: the screen in the truck
   - Week
+  - Month: a full calendar grid (added 2026-10-24). Colored bars on phones; time and name on tablets and desktop. Tap a day for its bookings, tap a booking to open it.
   - List
-  - Unscheduled: jobs that still need a date
+  - Unscheduled ("To do"): jobs that still need a date
 - **Email reminders to the assigned staff.**
   - Homeowner reminders need permission, and their own notification step the contractor confirms.
 - **Manual reschedule** with a date picker. Before saving, a confirmation screen shows exactly who will be notified.
