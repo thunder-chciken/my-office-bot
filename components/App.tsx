@@ -42,6 +42,7 @@ import {
 } from "@/lib/live";
 import { CUSTOMER_SELECT, LEAD_SELECT, customerFromRow, leadFromRow, type CustomerRow, type LeadRow } from "@/lib/rows";
 import { browserClient } from "@/lib/supabase/client";
+import { resyncPush } from "@/lib/pushClient";
 import { attachLead, blankCustomer, customersFromLeads, type Customer } from "@/lib/customers";
 import { useWide } from "@/lib/useWide";
 import { turnOffTexts, turnOnTexts } from "@/app/app/actions";
@@ -140,6 +141,23 @@ export default function App({
   }, []);
 
   useEffect(() => setTest(loadTestTarget()), []);
+
+  // Tapping a lead notification opens /app?lead=<id> (D63): show that lead, then tidy the address.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("lead");
+    if (!id) return;
+    setTab("leads");
+    setOpenId(id);
+    params.delete("lead");
+    const rest = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+  }, []);
+
+  // Keep this phone's notification subscription current on the server (browsers can rotate it).
+  useEffect(() => {
+    if (live) void resyncPush();
+  }, [live]);
 
   // ---- recently viewed customers (D58): the last 5 opened, kept on this device only.
   const recentKey = `mob:recent-customers:${account.siteKey ?? "demo"}`;
@@ -548,6 +566,7 @@ export default function App({
             rules={rules}
             setRules={setRules}
             onTest={sendTestLead}
+            onToast={showToast}
           />
         );
       case "customers":

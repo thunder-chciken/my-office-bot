@@ -2,6 +2,7 @@
 
 import { inviteText, SELF_TEXT_CONSENT, welcomeText } from "@/lib/consent";
 import { sendSms } from "@/lib/server/twilio";
+import { pushToAccount } from "@/lib/server/push";
 import { serverClient } from "@/lib/supabase/server";
 
 // Turning text alerts on and off for a person (D56). The database decides whether consent is
@@ -48,4 +49,19 @@ export async function turnOffTexts(contactId: string): Promise<{ error?: string 
   const supabase = await serverClient();
   const { error } = await supabase.rpc("stop_text_alerts", { p_contact: contactId });
   return { error: error?.message };
+}
+
+// "Send a test" on the phone notifications card (D63): only to this device, and only if it's the
+// signed-in person's own saved device (RLS hides everyone else's).
+export async function sendTestPush(endpoint: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await serverClient();
+  const { data: sub } = await supabase.from("push_subscriptions").select("account_id").eq("endpoint", endpoint).maybeSingle();
+  if (!sub) return { ok: false, error: "Turn notifications on for this phone first." };
+  const { sent } = await pushToAccount(sub.account_id as string, {
+    title: "My Office Bot test",
+    body: "Phone notifications are working. New leads will pop up just like this.",
+    url: "/app",
+    tag: "test",
+  }, { endpoint });
+  return sent ? { ok: true } : { ok: false, error: "Couldn't reach this phone. Try turning notifications off and on again." };
 }

@@ -3348,6 +3348,51 @@ a.row-btn {
   background: var(--blue-50);
 }
 
+/* ---------- Phone notifications (D63) ---------- */
+
+.push-card {
+  display: grid;
+  gap: 14px;
+}
+
+.push-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.push-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.push-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px 14px 34px;
+  border-radius: 16px;
+  background: var(--blue-50);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.push-note {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff8e6;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #7a5200;
+}
+
+.inline-ico {
+  display: inline-block;
+  vertical-align: -3px;
+  color: var(--blue);
+}
+
 /* ---------- Compare page (/compare) ---------- */
 
 .cmp-page {

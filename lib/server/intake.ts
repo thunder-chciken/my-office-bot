@@ -3,6 +3,7 @@ import { adminDb } from "./db";
 import { cardToken } from "./cardLink";
 import { leadAlertEmail, sendEmail } from "./email";
 import { leadAlertText, sendSms, TWILIO_OPTED_OUT } from "./twilio";
+import { leadPush, pushToAccount } from "./push";
 import { countLinks, emergencyWords, isValidEmail, normalizeLead, phoneDigits } from "./normalize";
 
 // Website form → lead → step-0 email alerts (SPEC §6, §9–§11, decision D37).
@@ -142,6 +143,18 @@ export async function handleFormSubmission(
   });
 
   let sent = 0;
+
+  // ---- step 0 phone notifications (D63): a pop-up on every phone that turned them on. First, because it's
+  // the fastest; a failure here never stops the email alerts below.
+  try {
+    const push = await pushToAccount(site.account_id, leadPush({ id: lead.id, ...fields }, urgent));
+    if (push.sent > 0) {
+      sent += push.sent;
+      await logEvents(site.account_id, lead.id, [{ type: "alert_sent", data: { channel: "push", devices: push.sent } }]);
+    }
+  } catch (e) {
+    console.error("push alerts failed", e);
+  }
 
   // ---- step 0 texts (D56): only once the business's texting is approved (sms_status 'active'), and only to
   // people who agreed (owner's in-app consent or a YES reply) for this exact number and haven't replied STOP.

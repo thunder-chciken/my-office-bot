@@ -7,6 +7,7 @@ import type { Channel, Contact, Rules } from "@/lib/data";
 import { useAccount } from "@/lib/account";
 import { SELF_TEXT_CONSENT } from "@/lib/consent";
 import { Avatar, Header, SectionTitle, Segmented, Sheet, Toggle } from "./ui";
+import { PhoneNotifications } from "./PhoneNotifications";
 
 const channelMeta: { key: Channel; label: string; Icon: typeof Phone }[] = [
   { key: "sms", label: "Text", Icon: MessageSquare },
@@ -58,6 +59,7 @@ export function AlertsScreen({
   rules,
   setRules,
   onTest,
+  onToast,
 }: {
   contacts: Contact[];
   onAdd: (c: Contact) => Promise<boolean>;
@@ -68,6 +70,7 @@ export function AlertsScreen({
   rules: Rules;
   setRules: (r: Rules) => void;
   onTest: () => void;
+  onToast: (text: string, error?: boolean) => void;
 }) {
   const account = useAccount();
   const { live } = account;
@@ -78,6 +81,9 @@ export function AlertsScreen({
   return (
     <>
       <Header title="Alerts" subtitle="Who hears about new leads, and how" />
+
+      <SectionTitle>This phone</SectionTitle>
+      <PhoneNotifications onToast={onToast} />
 
       <SectionTitle>People</SectionTitle>
       <div className="stack">

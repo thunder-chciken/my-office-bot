@@ -74,6 +74,10 @@ export function leadFromRow(l: LeadRow, nameForEmail: (to: unknown) => string, n
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
       .flatMap((e): AlertEvent[] => {
         const at = ago(e.created_at);
+        if (e.type === "alert_sent" && e.data?.channel === "push") {
+          const n = Number(e.data?.devices ?? 1);
+          return [{ minutesAgo: at, text: `Phone notification to ${n} ${n === 1 ? "phone" : "phones"}`, ok: true }];
+        }
         if (e.type === "alert_sent" && e.data?.channel === "sms") return [{ minutesAgo: at, text: `Texted ${String(e.data?.name ?? "")}`, ok: true }];
         if (e.type === "alert_sent") return [{ minutesAgo: at, text: `Emailed ${nameForEmail(e.data?.to)}`, ok: true }];
         if (e.type === "alert_failed")
