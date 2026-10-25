@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarPlus, Check, Clock, FlaskConical, Mail, MapPin, MessageSquare, Navigation, Phone, Send, X } from "lucide-react";
 import { fillReply, firstName, statusLabel, timeAgo, type Lead, type LeadNote, type LeadStatus } from "@/lib/data";
 import { repliesFor, useAccount } from "@/lib/account";
@@ -18,6 +18,9 @@ type DetailProps = {
   onAddNote: (lead: Lead, text: string) => Promise<boolean>;
   onDeleteNote: (lead: Lead, note: LeadNote) => void;
   onEditReplies: () => void;
+  /** Opened from a notification: scroll to the quick text replies and highlight them (D63). */
+  focusReplies?: boolean;
+  onRepliesShown?: () => void;
 };
 
 export function LeadSheet({ lead, onClose, ...props }: DetailProps & { lead: Lead | null; onClose: () => void }) {
@@ -39,12 +42,43 @@ export function LeadDetail({
   onAddNote,
   onDeleteNote,
   onEditReplies,
+  focusReplies = false,
+  onRepliesShown,
 }: DetailProps & { lead: Lead }) {
   const apple = useIsApple();
   const account = useAccount();
   const to = reach(lead, test);
   const testing = !!(test.phone.trim() || test.email.trim());
   const replies = repliesFor(account).map((r) => fillReply(r, lead.name));
+  const replyRef = useRef<HTMLElement>(null);
+  const [glow, setGlow] = useState(false);
+
+  const shown = useRef(onRepliesShown);
+  shown.current = onRepliesShown;
+
+  useEffect(() => {
+    if (!focusReplies) return;
+    // Wait for the sheet to slide up, then bring the replies into view.
+    const t = setTimeout(() => {
+      // Scroll only the sheet or panel itself; scrollIntoView would also shift the clipped frames around it.
+      const el = replyRef.current;
+      let box = el?.parentElement ?? null;
+      while (box && !(/(auto|scroll)/.test(getComputedStyle(box).overflowY) && box.scrollHeight > box.clientHeight)) box = box.parentElement;
+      if (el && box) {
+        const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 16;
+        box.scrollTo({ top, behavior: "smooth" });
+      }
+      setGlow(true);
+      shown.current?.();
+    }, 450);
+    return () => clearTimeout(t);
+  }, [focusReplies]);
+
+  useEffect(() => {
+    if (!glow) return;
+    const t = setTimeout(() => setGlow(false), 2500);
+    return () => clearTimeout(t);
+  }, [glow]);
 
   return (
         <>
@@ -122,6 +156,7 @@ export function LeadDetail({
             </li>
           </ul>
 
+          <section ref={replyRef} className={`reply-zone${glow ? " is-glow" : ""}`} aria-label={`Quick text to ${firstName(lead.name)}`}>
           <div className="sub-title-row">
             <h4 className="sub-title">Quick text to {firstName(lead.name)}</h4>
             <button className="text-btn" onClick={onEditReplies}>
@@ -140,6 +175,7 @@ export function LeadDetail({
           ) : (
             <p className="muted">No quick replies yet. Tap Edit replies to write some.</p>
           )}
+          </section>
 
           <LeadNotes key={lead.id} lead={lead} onAdd={onAddNote} onDelete={onDeleteNote} />
 

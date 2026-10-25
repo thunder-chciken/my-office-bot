@@ -76,7 +76,8 @@ export function leadPush(
   return {
     title: `${urgent ? "Urgent lead" : "New lead"}: ${who}`,
     body: body || "Tap to see the details.",
-    url: `/app?lead=${encodeURIComponent(lead.id)}`,
+    // With a phone number, tapping opens the lead scrolled to the quick text replies.
+    url: `/app?lead=${encodeURIComponent(lead.id)}${lead.phone?.trim() ? "&do=reply" : ""}`,
     tag: `lead-${lead.id}`,
   };
 }

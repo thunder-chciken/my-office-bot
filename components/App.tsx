@@ -120,6 +120,8 @@ export default function App({
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerDraft, setCustomerDraft] = useState<Customer | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  // A lead opened from a notification with "do=reply" scrolls to its quick text replies.
+  const [replyFocus, setReplyFocus] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
   const [banner, setBanner] = useState<Lead | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -142,14 +144,17 @@ export default function App({
 
   useEffect(() => setTest(loadTestTarget()), []);
 
-  // Tapping a lead notification opens /app?lead=<id> (D63): show that lead, then tidy the address.
+  // Tapping a lead notification opens /app?lead=<id>&do=reply (D63): show that lead at its quick replies,
+  // then tidy the address.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("lead");
     if (!id) return;
     setTab("leads");
     setOpenId(id);
+    if (params.get("do") === "reply") setReplyFocus(id);
     params.delete("lead");
+    params.delete("do");
     const rest = params.toString();
     window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
   }, []);
@@ -623,6 +628,8 @@ export default function App({
           onAddNote={addNote}
           onDeleteNote={deleteNote}
           onEditReplies={editReplies}
+          focusReplies={!!openLead && replyFocus === openLead.id}
+          onRepliesShown={() => setReplyFocus(null)}
         />
       )}
 
@@ -730,6 +737,8 @@ export default function App({
                   onAddNote={addNote}
                   onDeleteNote={deleteNote}
                   onEditReplies={editReplies}
+                  replyFocus={replyFocus}
+                  onRepliesShown={() => setReplyFocus(null)}
                 />
               ) : (
                 <DeskPage key={tab}>{screenFor(tab)}</DeskPage>

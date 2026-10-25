@@ -3350,6 +3350,18 @@ a.row-btn {
 
 /* ---------- Phone notifications (D63) ---------- */
 
+/* Opened from a notification: the quick replies scroll into view and glow for a moment. */
+.reply-zone {
+  scroll-margin-top: 16px;
+  border-radius: 20px;
+  transition: box-shadow 0.4s ease, background-color 0.4s ease;
+}
+
+.reply-zone.is-glow {
+  background: var(--blue-50);
+  box-shadow: 0 0 0 10px var(--blue-50), 0 0 0 12px var(--blue-200);
+}
+
 .push-card {
   display: grid;
   gap: 14px;
