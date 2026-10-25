@@ -8,7 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "My Office Bot",
     short_name: "Office Bot",
     description: "Instant lead alerts for home service pros.",
-    start_url: "/",
+    // The installed app opens on the real dashboard (signed-out people are sent to sign in).
+    start_url: "/app",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

@@ -25,18 +25,24 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// Tapping the notification opens that lead: reuse an open My Office Bot window if there is one.
+// Tapping the notification opens that lead. Phones differ in how they bring the app back (iPhones often just
+// focus it without loading the address), so the app is told three ways: a note it reads when it opens or
+// comes to the front, a direct message if it's already open, and the address itself.
+const PENDING = "mob-pending";
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = new URL((event.notification.data && event.notification.data.url) || "/app", self.location.origin).href;
   event.waitUntil(
     (async () => {
+      const cache = await caches.open(PENDING);
+      await cache.put("/__open", new Response(JSON.stringify({ url, at: Date.now() })));
+
       const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-      for (const client of windows) {
-        if (new URL(client.url).origin === self.location.origin) {
-          if ("navigate" in client) await client.navigate(url).catch(() => {});
-          return client.focus();
-        }
+      const open = windows.find((c) => new URL(c.url).origin === self.location.origin);
+      if (open) {
+        open.postMessage({ type: "mob-open", url });
+        return open.focus();
       }
       return self.clients.openWindow(url);
     })(),

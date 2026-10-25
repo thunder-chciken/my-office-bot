@@ -144,21 +144,6 @@ export default function App({
 
   useEffect(() => setTest(loadTestTarget()), []);
 
-  // Tapping a lead notification opens /app?lead=<id>&do=reply (D63): show that lead at its quick replies,
-  // then tidy the address.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("lead");
-    if (!id) return;
-    setTab("leads");
-    setOpenId(id);
-    if (params.get("do") === "reply") setReplyFocus(id);
-    params.delete("lead");
-    params.delete("do");
-    const rest = params.toString();
-    window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
-  }, []);
-
   // Keep this phone's notification subscription current on the server (browsers can rotate it).
   useEffect(() => {
     if (live) void resyncPush();
@@ -192,9 +177,9 @@ export default function App({
   const refreshing = useRef(false);
   const lastRefresh = useRef(0);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     if (!live || refreshing.current || document.visibilityState !== "visible") return;
-    if (Date.now() - lastRefresh.current < 5000) return;
+    if (!force && Date.now() - lastRefresh.current < 5000) return;
     refreshing.current = true;
     lastRefresh.current = Date.now();
     try {
@@ -248,6 +233,79 @@ export default function App({
       window.removeEventListener("focus", onShow);
     };
   }, [live, refresh]);
+
+  // ---- opening a lead from a notification (D63): the lead at its quick text replies. The address carries it
+  // (/app?lead=<id>&do=reply), and the service worker also leaves a note and messages an open app, because
+  // phones differ in how they bring the app back (iPhones often just focus it).
+  const openFromLink = useCallback(
+    (href: string) => {
+      let u: URL;
+      try {
+        u = new URL(href, window.location.origin);
+      } catch {
+        return;
+      }
+      const id = u.searchParams.get("lead");
+      if (!id) return;
+      // Opened on the demo home page: go to the real dashboard with the lead.
+      if (variant !== "app") {
+        window.location.href = `/app${u.search}`;
+        return;
+      }
+      setTab("leads");
+      setOpenId(id);
+      if (u.searchParams.get("do") === "reply") setReplyFocus(id);
+      // A brand-new lead may not be in this screen's list yet: fetch now, and once more shortly after.
+      if (!leadsRef.current.some((l) => l.id === id)) {
+        void refresh(true);
+        setTimeout(() => {
+          if (!leadsRef.current.some((l) => l.id === id)) void refresh(true);
+        }, 2500);
+      }
+    },
+    [variant, refresh],
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("lead")) {
+      openFromLink(window.location.href);
+      params.delete("lead");
+      params.delete("do");
+      const rest = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    }
+    const hasCaches = "caches" in window;
+    const takeNote = async () => {
+      if (!hasCaches) return;
+      try {
+        const cache = await caches.open("mob-pending");
+        const note = await cache.match("/__open");
+        if (!note) return;
+        await cache.delete("/__open");
+        const { url, at } = (await note.json()) as { url?: string; at?: number };
+        if (url && at && Date.now() - at < 10 * 60 * 1000) openFromLink(url);
+      } catch {}
+    };
+    const onShow = () => {
+      if (document.visibilityState === "visible") void takeNote();
+    };
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as { type?: string; url?: unknown } | null;
+      if (data?.type !== "mob-open" || typeof data.url !== "string") return;
+      if (hasCaches) void caches.open("mob-pending").then((c) => c.delete("/__open")).catch(() => {});
+      openFromLink(data.url);
+    };
+    void takeNote();
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("focus", onShow);
+    navigator.serviceWorker?.addEventListener("message", onMessage);
+    return () => {
+      document.removeEventListener("visibilitychange", onShow);
+      window.removeEventListener("focus", onShow);
+      navigator.serviceWorker?.removeEventListener("message", onMessage);
+    };
+  }, [openFromLink]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
