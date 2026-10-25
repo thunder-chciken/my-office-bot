@@ -324,6 +324,11 @@ a:focus-visible {
   margin-top: 16px;
 }
 
+/* Long copy-and-paste text (addresses, form code) scrolls inside its box instead of widening the card. */
+.stack > * {
+  min-width: 0;
+}
+
 .stack-sm {
   display: grid;
   gap: 10px;
