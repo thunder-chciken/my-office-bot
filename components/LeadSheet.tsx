@@ -7,6 +7,7 @@ import { repliesFor, useAccount } from "@/lib/account";
 import { mailHref, mapsHref, reach, smsHref, telHref, useIsApple, type TestTarget } from "@/lib/contact";
 import { Avatar, Segmented, Sheet } from "./ui";
 import { SaveContactButton } from "./SaveContact";
+import { ClaimBar } from "./Claim";
 
 export type ContactMethod = "call" | "text" | "email" | "directions";
 
@@ -92,6 +93,8 @@ export function LeadDetail({
               </p>
             </div>
           </div>
+
+          <ClaimBar lead={lead} />
 
           {testing && (
             <p className="test-note">

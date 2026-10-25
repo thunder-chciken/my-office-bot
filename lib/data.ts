@@ -17,6 +17,14 @@ export type LeadNote = {
   minutesAgo: number;
 };
 
+/** Who's on a lead (D64): claimed with "I'm on it", from the app or an alert email. */
+export type Claim = {
+  name: string;
+  contactId?: string;
+  userId?: string;
+  minutesAgo: number;
+};
+
 export type Lead = {
   id: string;
   name: string;
@@ -26,11 +34,14 @@ export type Lead = {
   email: string;
   address: string;
   minutesAgo: number;
+  /** When it arrived (ms), so "waiting" timers keep ticking between refreshes. */
+  receivedAt?: number;
   status: LeadStatus;
   source: string;
   urgent?: boolean;
   alerts: AlertEvent[];
   notes?: LeadNote[];
+  claimedBy?: Claim | null;
 };
 
 export type Contact = {
@@ -89,6 +100,7 @@ export const seedLeads: Lead[] = [
     minutesAgo: 18,
     status: "new",
     source: "Get a quote form",
+    claimedBy: { name: "Jenna", contactId: "c2", minutesAgo: 6 },
     alerts: [
       { minutesAgo: 18, text: "Texted Matt", ok: true },
       { minutesAgo: 18, text: "Emailed Jenna (office)", ok: true },

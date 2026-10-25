@@ -15,7 +15,7 @@ import {
   LogOut,
   MessageSquareText,
   Pencil,
-  Scale,
+  ListChecks,
   UserPlus,
   Wind,
   Zap,
@@ -228,9 +228,9 @@ export function BusinessScreen({
               </a>
             </li>
             <li>
-              <a className="row row-btn row-link" href="/compare">
-                <Scale size={22} className="row-icon" />
-                <span className="row-text">How we compare</span>
+              <a className="row row-btn row-link" href="/features">
+                <ListChecks size={22} className="row-icon" />
+                <span className="row-text">What it does</span>
                 <ChevronRight size={22} className="chev" />
               </a>
             </li>

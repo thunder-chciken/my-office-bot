@@ -8,6 +8,8 @@ import { useAccount } from "@/lib/account";
 import { SELF_TEXT_CONSENT } from "@/lib/consent";
 import { Avatar, Header, SectionTitle, Segmented, Sheet, Toggle } from "./ui";
 import { PhoneNotifications } from "./PhoneNotifications";
+import { ConfirmEmailCard, ReminderCard } from "./FollowUpSettings";
+import type { Account } from "@/lib/account";
 
 const channelMeta: { key: Channel; label: string; Icon: typeof Phone }[] = [
   { key: "sms", label: "Text", Icon: MessageSquare },
@@ -60,6 +62,8 @@ export function AlertsScreen({
   setRules,
   onTest,
   onToast,
+  onSaveReminder,
+  onSaveConfirm,
 }: {
   contacts: Contact[];
   onAdd: (c: Contact) => Promise<boolean>;
@@ -71,6 +75,8 @@ export function AlertsScreen({
   setRules: (r: Rules) => void;
   onTest: () => void;
   onToast: (text: string, error?: boolean) => void;
+  onSaveReminder: (minutes: number) => Promise<boolean>;
+  onSaveConfirm: (c: Account["confirmEmail"]) => Promise<boolean>;
 }) {
   const account = useAccount();
   const { live } = account;
@@ -134,6 +140,12 @@ export function AlertsScreen({
           <UserPlus size={24} strokeWidth={2.4} /> Add a person
         </button>
       </div>
+
+      <SectionTitle>If nobody&apos;s on it</SectionTitle>
+      <ReminderCard onSave={onSaveReminder} />
+
+      <SectionTitle>Homeowner email</SectionTitle>
+      <ConfirmEmailCard contacts={contacts} onSave={onSaveConfirm} />
 
       {live ? (
         <div className="card pad soon-card">

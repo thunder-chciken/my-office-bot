@@ -65,6 +65,35 @@ export async function saveLeadStatus(id: string, status: LeadStatus): Promise<Re
   return { error: message(error) };
 }
 
+// "I'm on it" (0014). No contact = the signed-in person; a contact = hand it to them. Without force, a lead
+// someone else already has stays theirs, and the answer says who.
+export type ClaimResult = { claimed: boolean; name: string; at: string; contact: string | null; user: string | null };
+
+export async function claimLead(id: string, contactId: string | null, force: boolean): Promise<Result & { claim?: ClaimResult }> {
+  const { data, error } = await browserClient().rpc("claim_lead", { p_lead: id, p_contact: contactId, p_force: force });
+  return { claim: (data as ClaimResult | null) ?? undefined, error: message(error) };
+}
+
+export async function releaseLead(id: string): Promise<Result> {
+  const { error } = await browserClient().rpc("release_lead", { p_lead: id });
+  return { error: message(error) };
+}
+
+export async function saveReminder(minutes: number): Promise<Result> {
+  const { error } = await browserClient().rpc("save_reminder", { p_minutes: minutes });
+  return { error: message(error) };
+}
+
+export async function saveConfirmEmail(c: Account["confirmEmail"]): Promise<Result> {
+  const { error } = await browserClient().rpc("save_confirm_email", {
+    p_on: c.on,
+    p_subject: c.subject,
+    p_body: c.body,
+    p_reply_to: c.replyTo,
+  });
+  return { error: message(error) };
+}
+
 export async function saveCustomer(c: Customer): Promise<Result & { id?: string }> {
   const { data, error } = await browserClient().rpc("save_customer", {
     p_id: c.id || null,

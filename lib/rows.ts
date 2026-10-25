@@ -5,7 +5,7 @@ import type { Customer } from "./customers";
 // so a lead looks the same whether it came with the page or arrived while the app was open.
 
 export const LEAD_SELECT =
-  "id, name, phone, email, service, message, address, urgency, state, received_at, channel, extra, lead_events(type, data, created_at), lead_notes(id, body, created_at)";
+  "id, name, phone, email, service, message, address, urgency, state, received_at, channel, extra, acknowledged_at, acknowledged_by_name, acknowledged_by_contact_id, acknowledged_by_user, lead_events(type, data, created_at), lead_notes(id, body, created_at)";
 export const CUSTOMER_SELECT = "id, name, phone, email, address, notes, source, created_at, leads(id)";
 
 export type LeadRow = {
@@ -21,6 +21,10 @@ export type LeadRow = {
   received_at: string;
   channel: string;
   extra: { builder?: string; form?: string } | null;
+  acknowledged_at: string | null;
+  acknowledged_by_name: string | null;
+  acknowledged_by_contact_id: string | null;
+  acknowledged_by_user: string | null;
   lead_events: { type: string; data: Record<string, unknown> | null; created_at: string }[];
   lead_notes: { id: string; body: string; created_at: string }[] | null;
 };
@@ -48,6 +52,8 @@ const builderNames: Record<string, string> = {
   fluentform: "Fluent Forms",
 };
 
+const firstOf = (name: string | null) => (name || "the homeowner").split(" ")[0];
+
 export const minutesSince = (iso: string, now = Date.now()) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
 
 export function leadFromRow(l: LeadRow, nameForEmail: (to: unknown) => string, now = Date.now()): Lead {
@@ -61,7 +67,16 @@ export function leadFromRow(l: LeadRow, nameForEmail: (to: unknown) => string, n
     email: l.email ?? "",
     address: l.address ?? "",
     minutesAgo: ago(l.received_at),
+    receivedAt: new Date(l.received_at).getTime(),
     status: statusFor[l.state] ?? "new",
+    claimedBy: l.acknowledged_at
+      ? {
+          name: l.acknowledged_by_name || "Someone",
+          contactId: l.acknowledged_by_contact_id ?? undefined,
+          userId: l.acknowledged_by_user ?? undefined,
+          minutesAgo: ago(l.acknowledged_at),
+        }
+      : null,
     // Plugin leads say which builder and form they came from (D57); the plugin's own chat bubble just says so (D59).
     source:
       l.channel === "plugin" && l.extra?.builder === "bubble"
@@ -80,6 +95,12 @@ export function leadFromRow(l: LeadRow, nameForEmail: (to: unknown) => string, n
         }
         if (e.type === "alert_sent" && e.data?.channel === "sms") return [{ minutesAgo: at, text: `Texted ${String(e.data?.name ?? "")}`, ok: true }];
         if (e.type === "alert_sent") return [{ minutesAgo: at, text: `Emailed ${nameForEmail(e.data?.to)}`, ok: true }];
+        // D64: who took it, the second reminder, and the homeowner's "we got your request" email.
+        if (e.type === "claimed") return [{ minutesAgo: at, text: `${String(e.data?.name ?? "Someone")} is on it`, ok: true }];
+        if (e.type === "released") return [{ minutesAgo: at, text: "Back to waiting: nobody's on it", ok: false }];
+        if (e.type === "reminder_sent") return [{ minutesAgo: at, text: `Reminder sent: nobody was on it after ${String(e.data?.minutes ?? "")} min`, ok: false }];
+        if (e.type === "confirm_sent") return [{ minutesAgo: at, text: `Sent ${firstOf(l.name)} a "we got your request" email`, ok: true }];
+        if (e.type === "confirm_failed") return [{ minutesAgo: at, text: `"We got your request" email didn't go through`, ok: false }];
         if (e.type === "alert_failed")
           return [{ minutesAgo: at, text: e.data?.channel === "sms" ? `Text to ${String(e.data?.name ?? "")} didn't go through` : "Email alert didn't go through", ok: false }];
         return [];

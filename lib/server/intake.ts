@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 import { adminDb } from "./db";
 import { cardToken } from "./cardLink";
-import { leadAlertEmail, sendEmail } from "./email";
+import { claimUrl } from "./claimLink";
+import { confirmEmail, leadAlertEmail, sendEmail } from "./email";
+import { defaultConfirmBody, defaultConfirmSubject, fillConfirm } from "@/lib/confirm";
 import { leadAlertText, sendSms, TWILIO_OPTED_OUT } from "./twilio";
 import { leadPush, pushToAccount } from "./push";
 import { countLinks, emergencyWords, isValidEmail, normalizeLead, phoneDigits } from "./normalize";
@@ -27,7 +29,9 @@ export async function handleFormSubmission(
 
   const { data: site, error: siteErr } = await db
     .from("sites")
-    .select("id, account_id, domain, accounts(timezone, billing_status, sms_status)")
+    .select(
+      "id, account_id, domain, accounts(name, phone, timezone, billing_status, sms_status, confirm_email_on, confirm_email_subject, confirm_email_body, confirm_reply_to)",
+    )
     .eq("public_key", siteKey)
     .maybeSingle();
   if (siteErr) throw siteErr;
@@ -128,19 +132,23 @@ export async function handleFormSubmission(
     .eq("account_id", site.account_id)
     .eq("alert_email", true)
     .is("removed_at", null)
-    .not("email", "is", null);
+    .not("email", "is", null)
+    .order("created_at");
   if (cErr) throw cErr;
 
   const accounts = site.accounts as unknown as { timezone: string } | { timezone: string }[] | null;
   const timezone = (Array.isArray(accounts) ? accounts[0]?.timezone : accounts?.timezone) ?? "America/Chicago";
-  const message = leadAlertEmail({
-    ...fields,
-    urgent,
-    siteDomain: site.domain,
-    receivedAt: new Date(lead.received_at),
-    timezone,
-    cardUrl: `${process.env.PUBLIC_BASE_URL ?? "https://myofficebot.app"}/api/v1/vcard?t=${encodeURIComponent(cardToken("lead", lead.id))}`,
-  });
+  // Each person's email carries their own "I'm on it" link (D64), so the rest of the message is built per person.
+  const alertFor = (contactId: string) =>
+    leadAlertEmail({
+      ...fields,
+      urgent,
+      siteDomain: site.domain,
+      receivedAt: new Date(lead.received_at),
+      timezone,
+      cardUrl: `${process.env.PUBLIC_BASE_URL ?? "https://myofficebot.app"}/api/v1/vcard?t=${encodeURIComponent(cardToken("lead", lead.id))}`,
+      claimUrl: claimUrl(lead.id, contactId),
+    });
 
   let sent = 0;
 
@@ -235,7 +243,7 @@ export async function handleFormSubmission(
 
     const result = await sendEmail({
       to: contact.email!,
-      ...message,
+      ...alertFor(contact.id),
       replyTo: fields.email || undefined,
       idempotencyKey,
     });
@@ -259,7 +267,56 @@ export async function handleFormSubmission(
 
   if (sent > 0) await db.from("leads").update({ state: "notified" }).eq("id", lead.id).eq("state", "received");
 
+  // ---- the homeowner's "we got your request" email (D64): only when the business turned it on and they left an email.
+  // It never affects the alerts above, and isn't counted as one.
+  const business = (Array.isArray(acct) ? acct[0] : acct) as unknown as AccountRow | null;
+  if (business?.confirm_email_on && fields.email) {
+    try {
+      await sendConfirmation(site.account_id, lead.id, site.domain, business, fields, contacts?.[0]?.email ?? undefined);
+    } catch (e) {
+      console.error("homeowner confirmation failed", e);
+    }
+  }
+
   return { status: 202, body: { ok: true, lead_id: lead.id, duplicate: false, alerts_sent: sent } };
+}
+
+type AccountRow = {
+  name: string;
+  phone: string | null;
+  confirm_email_on: boolean;
+  confirm_email_subject: string | null;
+  confirm_email_body: string | null;
+  confirm_reply_to: string | null;
+};
+
+async function sendConfirmation(
+  accountId: string,
+  leadId: string,
+  siteDomain: string,
+  business: AccountRow,
+  lead: { name: string; email: string; service: string },
+  fallbackReplyTo: string | undefined,
+) {
+  const values = { name: lead.name, business: business.name, service: lead.service, phone: business.phone ?? "" };
+  const email = confirmEmail({
+    subject: fillConfirm(business.confirm_email_subject || defaultConfirmSubject, values).replace(/\s+/g, " ").trim(),
+    body: fillConfirm(business.confirm_email_body || defaultConfirmBody, values),
+    business: business.name,
+    siteDomain,
+  });
+  const result = await sendEmail({
+    to: lead.email,
+    ...email,
+    fromName: business.name,
+    replyTo: business.confirm_reply_to || fallbackReplyTo,
+    idempotencyKey: `${leadId}:confirm`,
+  });
+  await logEvents(accountId, leadId, [
+    result.ok
+      ? { type: "confirm_sent", data: { to: lead.email } }
+      : { type: "confirm_failed", data: { to: lead.email, error: result.error } },
+  ]);
 }
 
 async function logEvents(accountId: string, leadId: string, events: { type: string; data?: Record<string, unknown> }[]) {

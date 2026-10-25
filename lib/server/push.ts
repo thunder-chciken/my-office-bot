@@ -81,3 +81,17 @@ export function leadPush(
     tag: `lead-${lead.id}`,
   };
 }
+
+/** The second reminder (D64): replaces the first pop-up for the same lead. "Still waiting: Pat Homeowner" */
+export function reminderPush(
+  lead: { id: string; name?: string | null; service?: string | null; phone?: string | null },
+  waited: string,
+): PushMessage {
+  const who = lead.name?.trim() || "Website visitor";
+  return {
+    title: `Still waiting: ${who}`,
+    body: `${waited} and nobody's on it yet.${lead.service?.trim() ? ` ${lead.service.trim()}.` : ""} Tap to reply.`,
+    url: `/app?lead=${encodeURIComponent(lead.id)}${lead.phone?.trim() ? "&do=reply" : ""}`,
+    tag: `lead-${lead.id}`,
+  };
+}

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { LogIn, LogOut, Scale, Search, UserPlus, Zap, type LucideIcon } from "lucide-react";
+import { LogIn, LogOut, ListChecks, Search, UserPlus, Zap, type LucideIcon } from "lucide-react";
 import { initials, statusLabel, timeAgo, type Lead, type LeadNote, type LeadStatus } from "@/lib/data";
 import { useAccount } from "@/lib/account";
 import { browserClient } from "@/lib/supabase/client";
 import { LeadDetail, type ContactMethod } from "./LeadSheet";
 import type { TestTarget } from "@/lib/contact";
 import { Avatar, Mascot, Segmented } from "./ui";
+import { ClaimTag, WaitPill } from "./Claim";
 
 // The dashboard layout for PCs and tablets: a sidebar on the left, the page on the right.
 // It shows the same screens as the phone app, plus a two-pane Leads page.
@@ -75,8 +76,8 @@ export function DesktopShell<T extends string>({
             <a className="desk-link" href="/login">
               <LogIn size={20} strokeWidth={2.1} /> <span>Sign in</span>
             </a>
-            <a className="desk-link" href="/compare">
-              <Scale size={20} strokeWidth={2.1} /> <span>How we compare</span>
+            <a className="desk-link" href="/features">
+              <ListChecks size={20} strokeWidth={2.1} /> <span>What it does</span>
             </a>
           </>
         )}
@@ -186,6 +187,8 @@ export function LeadsDesk({
                   <span className="desk-row-tags">
                     <span className={`pill status-${l.status}`}>{statusLabel[l.status]}</span>
                     {l.urgent && l.status === "new" && <span className="pill pill-urgent">Urgent</span>}
+                    <WaitPill lead={l} />
+                    <ClaimTag lead={l} />
                   </span>
                 </span>
               </button>

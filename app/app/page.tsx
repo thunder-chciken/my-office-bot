@@ -23,7 +23,7 @@ export default async function AppPage() {
 
   const { data: membership } = await supabase
     .from("memberships")
-    .select("account_id, accounts(name, phone, city, timezone, trades, billing_status, sms_status, quick_replies)")
+    .select("account_id, accounts(name, phone, city, timezone, trades, billing_status, sms_status, quick_replies, remind_after_min, confirm_email_on, confirm_email_subject, confirm_email_body, confirm_reply_to)")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!membership) redirect("/onboarding");
@@ -104,6 +104,11 @@ export default async function AppPage() {
     billing_status: string;
     sms_status: string;
     quick_replies: string[] | null;
+    remind_after_min: number;
+    confirm_email_on: boolean;
+    confirm_email_subject: string | null;
+    confirm_email_body: string | null;
+    confirm_reply_to: string | null;
   };
   const customers = ((customerRows ?? []) as CustomerRow[]).map((c) => customerFromRow(c, now));
 
@@ -192,6 +197,14 @@ export default async function AppPage() {
     pluginLastSeen: site?.plugin_last_seen_at ?? null,
     pluginSiteUrl: site?.plugin_site_url ?? null,
     quickReplies: row?.quick_replies ?? null,
+    userId: user.id,
+    remindAfter: row?.remind_after_min ?? 15,
+    confirmEmail: {
+      on: row?.confirm_email_on ?? false,
+      subject: row?.confirm_email_subject ?? null,
+      body: row?.confirm_email_body ?? null,
+      replyTo: row?.confirm_reply_to ?? null,
+    },
   };
 
   return (

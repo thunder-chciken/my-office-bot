@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "My Office Bot",
-  description: "Instant lead alerts for home service pros — text, email and call the moment a website form comes in.",
+  description: "Instant lead alerts for contractors: every website lead on your phone in seconds, and a reply in one tap.",
   appleWebApp: { capable: true, title: "My Office Bot", statusBarStyle: "default" },
 };
 

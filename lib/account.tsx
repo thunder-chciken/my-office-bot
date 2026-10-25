@@ -23,6 +23,12 @@ export type Account = {
   pluginSiteUrl: string | null;
   /** Quick text replies (D58): the business's own, or null for the built-in set. */
   quickReplies: string[] | null;
+  /** The signed-in person, so "I'm on it" can say "You" (D64). */
+  userId: string;
+  /** Second reminder after this many minutes with nobody on a lead; 0 = off (D64). */
+  remindAfter: number;
+  /** The homeowner's instant "we got your request" email; null subject/body/replyTo = built-in (D64). */
+  confirmEmail: { on: boolean; subject: string | null; body: string | null; replyTo: string | null };
 };
 
 export const repliesFor = (a: Account) => a.quickReplies ?? builtInReplies;
@@ -43,6 +49,9 @@ export const demoAccount: Account = {
   pluginLastSeen: null,
   pluginSiteUrl: null,
   quickReplies: null,
+  userId: "demo",
+  remindAfter: 15,
+  confirmEmail: { on: true, subject: null, body: null, replyTo: null },
 };
 
 const AccountContext = createContext<Account>(demoAccount);

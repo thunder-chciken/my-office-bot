@@ -7,6 +7,7 @@ import { timeAgo, type Lead, type LeadStatus } from "@/lib/data";
 import { useAccount } from "@/lib/account";
 import { reach, smsHref, telHref, type TestTarget } from "@/lib/contact";
 import { Avatar, Header, Mascot, Segmented } from "./ui";
+import { ClaimTag, WaitPill } from "./Claim";
 
 export function LeadsScreen({
   leads,
@@ -87,7 +88,11 @@ export function LeadsScreen({
                   </div>
                   <span className="lead-time">{timeAgo(lead.minutesAgo)}</span>
                 </div>
-                {lead.urgent && lead.status === "new" && <span className="pill pill-urgent">Urgent</span>}
+                <div className="lead-tags">
+                  {lead.urgent && lead.status === "new" && <span className="pill pill-urgent">Urgent</span>}
+                  <WaitPill lead={lead} />
+                  <ClaimTag lead={lead} />
+                </div>
                 <p className="lead-msg">{lead.message}</p>
               </button>
               <div className="btn-row">

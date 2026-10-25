@@ -21,6 +21,7 @@ import {
   seedRules,
   testLeadPool,
   timeAgo,
+  type Claim,
   type Contact,
   type Lead,
   type LeadNote,
@@ -29,6 +30,7 @@ import {
 import { AccountProvider, LayoutProvider, demoAccount, type Account } from "@/lib/account";
 import {
   addLeadNote,
+  claimLead,
   deleteCustomer,
   deleteLeadNote,
   removeContact,
@@ -37,10 +39,13 @@ import {
   saveContact,
   saveCustomer,
   saveEventStatus,
+  saveConfirmEmail,
   saveLeadStatus,
   saveQuickReplies,
+  saveReminder,
+  releaseLead,
 } from "@/lib/live";
-import { CUSTOMER_SELECT, LEAD_SELECT, customerFromRow, leadFromRow, type CustomerRow, type LeadRow } from "@/lib/rows";
+import { CUSTOMER_SELECT, LEAD_SELECT, customerFromRow, leadFromRow, minutesSince, type CustomerRow, type LeadRow } from "@/lib/rows";
 import { browserClient } from "@/lib/supabase/client";
 import { resyncPush } from "@/lib/pushClient";
 import { attachLead, blankCustomer, customersFromLeads, type Customer } from "@/lib/customers";
@@ -70,6 +75,7 @@ import { DeskPage, DesktopShell, LeadsDesk } from "./Desktop";
 import { CustomerEditSheet, CustomerSheet, CustomersScreen } from "./CustomersScreen";
 import { Mascot } from "./ui";
 import { RepliesScreen } from "./QuickReplies";
+import { ClaimProvider, type Me } from "./Claim";
 
 type Tab = "leads" | "schedule" | "customers" | "replies" | "alerts" | "website" | "business";
 
@@ -113,7 +119,10 @@ export default function App({
   const live = account.live;
   const wide = useWide() && variant === "app";
   const [tab, setTab] = useState<Tab>("leads");
-  const [leads, setLeads] = useState(initialLeads ?? seedLeads);
+  // Demo leads get an arrival time so their "waiting" timers tick like real ones.
+  const [leads, setLeads] = useState(
+    () => initialLeads ?? seedLeads.map((l) => ({ ...l, receivedAt: Date.now() - l.minutesAgo * 60_000 })),
+  );
   const [contacts, setContacts] = useState(initialContacts ?? seedContacts);
   const [rules, setRules] = useState(seedRules);
   const [customers, setCustomers] = useState<Customer[]>(() => initialCustomers ?? customersFromLeads(seedLeads));
@@ -200,7 +209,18 @@ export default function App({
       setLeads((ls) => {
         const kept = ls.map((l) => {
           const f = byId.get(l.id);
-          return f ? { ...l, minutesAgo: f.minutesAgo, status: f.status, notes: f.notes } : l;
+          if (!f) return l;
+          // New history from the database (someone claimed it, a reminder went out) joins this screen's own.
+          const extra = f.alerts.filter((a) => !l.alerts.some((b) => b.text === a.text));
+          return {
+            ...l,
+            minutesAgo: f.minutesAgo,
+            receivedAt: f.receivedAt,
+            status: f.status,
+            notes: f.notes,
+            claimedBy: f.claimedBy,
+            alerts: extra.length ? [...l.alerts, ...extra] : l.alerts,
+          };
         });
         const ids = new Set(kept.map((l) => l.id));
         return [...added.filter((l) => !ids.has(l.id)), ...kept];
@@ -458,12 +478,104 @@ export default function App({
     showToast(messages[how]);
     if (how === "directions") return;
     const verb = { call: "called", text: "texted", email: "emailed" }[how];
+    // Reaching out to a lead nobody has makes it yours, so the team doesn't double up (D64).
+    if (lead.status === "new" && !lead.claimedBy) void claim(lead, null, false, true);
     if (lead.status === "new") void persistStatus(lead.id, "contacted");
     patchLead(lead.id, (l) => ({
       ...l,
       status: l.status === "new" ? "contacted" : l.status,
       alerts: [...l.alerts, { minutesAgo: 0, text: `You ${verb} ${name}`, ok: true }],
     }));
+  };
+
+  // ---- "I'm on it" (D64). No contact = me; a contact = hand it to them; force = take it from whoever has it.
+
+  const meContact = live
+    ? contacts.find((c) => c.email && c.email.toLowerCase() === account.ownerEmail.toLowerCase())
+    : contacts[0];
+  const me: Me = { userId: account.userId, contactId: meContact?.id };
+
+  const claim = async (lead: Lead, contactId: string | null, force: boolean, quiet = false) => {
+    const first = firstName(lead.name);
+    const handing = !!contactId && contactId !== me.contactId;
+    const person = contacts.find((c) => c.id === (contactId ?? me.contactId));
+    const before = lead.claimedBy ?? null;
+    const optimistic: Claim = {
+      name: person?.name || account.ownerName || "You",
+      contactId: person?.id,
+      userId: handing ? undefined : account.userId,
+      minutesAgo: 0,
+    };
+    const history = { minutesAgo: 0, text: `${optimistic.name} is on it`, ok: true };
+    patchLead(lead.id, (l) => ({ ...l, claimedBy: optimistic, alerts: [...l.alerts, history] }));
+
+    let result: Claim = optimistic;
+    if (live) {
+      const { claim: saved, error } = await claimLead(lead.id, contactId, force);
+      if (error || !saved) {
+        patchLead(lead.id, (l) => ({ ...l, claimedBy: before, alerts: l.alerts.filter((a) => a !== history) }));
+        return showToast(error ?? "Couldn't save", true);
+      }
+      result = {
+        name: saved.name,
+        contactId: saved.contact ?? undefined,
+        userId: saved.user ?? undefined,
+        minutesAgo: minutesSince(saved.at),
+      };
+      patchLead(lead.id, (l) => ({
+        ...l,
+        claimedBy: result,
+        alerts: saved.claimed ? l.alerts : l.alerts.filter((a) => a !== history),
+      }));
+      if (!saved.claimed) return showToast(`${firstName(saved.name)} already has ${first}`, true);
+    }
+    if (!quiet) showToast(handing ? `Handed ${first} to ${firstName(result.name)}` : `You're on ${first}. Your team can see it.`);
+  };
+
+  const release = async (lead: Lead) => {
+    const before = lead.claimedBy ?? null;
+    patchLead(lead.id, (l) => ({ ...l, claimedBy: null }));
+    if (live) {
+      const { error } = await releaseLead(lead.id);
+      if (error) {
+        patchLead(lead.id, (l) => ({ ...l, claimedBy: before }));
+        return showToast(error, true);
+      }
+    }
+    showToast(`Nobody's on ${firstName(lead.name)} now`);
+  };
+
+  const claims = { me, team: contacts, onClaim: (l: Lead, c: string | null, f: boolean) => void claim(l, c, f), onRelease: release };
+
+  // ---- follow-up settings (D64)
+
+  const saveReminderSetting = async (minutes: number) => {
+    const prev = account.remindAfter;
+    setAccount((a) => ({ ...a, remindAfter: minutes }));
+    if (live) {
+      const { error } = await saveReminder(minutes);
+      if (error) {
+        setAccount((a) => ({ ...a, remindAfter: prev }));
+        showToast(error, true);
+        return false;
+      }
+    }
+    showToast(minutes ? `Second reminder after ${minutes === 60 ? "1 hour" : `${minutes} min`}` : "Second reminder is off");
+    return true;
+  };
+
+  const saveConfirm = async (next: Account["confirmEmail"]) => {
+    if (live) {
+      const { error } = await saveConfirmEmail(next);
+      if (error) {
+        showToast(error, true);
+        return false;
+      }
+    }
+    const switched = next.on !== account.confirmEmail.on;
+    setAccount((a) => ({ ...a, confirmEmail: next }));
+    showToast(switched ? (next.on ? "Homeowner emails are on" : "Homeowner emails are off") : "Email saved");
+    return true;
   };
 
   const editReplies = () => {
@@ -571,6 +683,7 @@ export default function App({
       ...base,
       id: `t${Date.now()}`,
       minutesAgo: 0,
+      receivedAt: Date.now(),
       status: "new",
       alerts: alerted.flatMap((c) => {
         const ev = [];
@@ -630,6 +743,8 @@ export default function App({
             setRules={setRules}
             onTest={sendTestLead}
             onToast={showToast}
+            onSaveReminder={saveReminderSetting}
+            onSaveConfirm={saveConfirm}
           />
         );
       case "customers":
@@ -780,6 +895,7 @@ export default function App({
   if (wide) {
     return (
       <AccountProvider value={account}>
+      <ClaimProvider value={claims}>
         <LayoutProvider value="desktop">
           <MotionConfig reducedMotion="user">
             <DesktopShell nav={deskTabs} tab={tab} onTab={setTab} newCount={newCount}>
@@ -805,12 +921,14 @@ export default function App({
             </DesktopShell>
           </MotionConfig>
         </LayoutProvider>
+            </ClaimProvider>
       </AccountProvider>
     );
   }
 
   return (
     <AccountProvider value={account}>
+      <ClaimProvider value={claims}>
     <MotionConfig reducedMotion="user">
       <div className={`stage${variant === "app" ? " is-app" : ""}`}>
         <aside className="stage-intro">
@@ -819,8 +937,8 @@ export default function App({
             My <span className="wordmark-blue">Office</span> Bot
           </h1>
           <p>
-            Every website lead, straight to your phone — by text, email, or a phone call. Reply with one tap
-            and get back to work.
+            Every website lead on your phone the second it comes in. Reply with one tap, before they move on
+            down the road.
           </p>
           {live ? (
             <p className="stage-hint">Signed in as {account.ownerEmail}</p>
@@ -835,8 +953,8 @@ export default function App({
                   Sign in
                 </a>
               </div>
-              <a className="stage-compare" href="/compare">
-                See how we compare to Housecall Pro and Jobber →
+              <a className="stage-features" href="/features">
+                See everything it does →
               </a>
             </>
           )}
@@ -923,6 +1041,7 @@ export default function App({
         </div>
       </div>
     </MotionConfig>
-    </AccountProvider>
+          </ClaimProvider>
+      </AccountProvider>
   );
 }
